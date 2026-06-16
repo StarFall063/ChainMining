@@ -1,0 +1,19 @@
+# === 连锁挖掘 ===
+shape.chainmining.shapeless=无形状连锁
+shape.chainmining.plane=面向一块连锁
+shape.chainmining.tunnel=3x3 隧道连锁
+match.chainmining.meta_only=仅Meta
+match.chainmining.nbt_only=仅NBT
+match.chainmining.nbt_meta=NBT+Meta
+match.chainmining.registry_only=仅注册名
+overlay.chainmining.status=连锁挖掘已启用 | 模式: %s
+overlay.chainmining.count=连锁数量: %s | 渲染数量: %s | 未渲染数量: %s
+overlay.chainmining.info=§e匹配模式: §f%s  §e范围: §f%s
+message.chainmining.enabled=连锁挖矿已开启
+message.chainmining.disabled=连锁挖矿已关闭
+message.chainmining.shape=连锁形状: %s
+message.chainmining.match_mode=匹配模式: %s
+message.chainmining.range=相邻范围: %s
+message.chainmining.neighbor_range=相邻搜索范围: %s
+key.chainmining.toggle_chain_mining=按住启用连锁挖矿
+key.categories.chainmining=连锁挖矿
