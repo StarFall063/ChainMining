@@ -1,22 +1,31 @@
-# eclipse
-bin
+# Eclipse
+bin/
 *.launch
-.settings
+.settings/
 .metadata
 .classpath
 .project
 
-# idea
-out
+# IntelliJ IDEA
+out/
+.idea/
 *.ipr
 *.iws
 *.iml
-.idea
 
-# gradle
-build
-.gradle
+# Gradle
+build/
+.gradle/
 
-# other
-eclipse
-run
+# Minecraft runtime
+run/
+logs/
+eclipse/
+
+# Claude Code
+.claude/
+.scratch/
+
+# OS
+Thumbs.db
+.DS_Store

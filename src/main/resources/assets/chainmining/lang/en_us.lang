@@ -15,5 +15,5 @@ message.chainmining.shape=Chain shape: %s
 message.chainmining.match_mode=Match mode: %s
 message.chainmining.range=Neighbor range: %s
 message.chainmining.neighbor_range=Neighbor search range: %s
-key.chainmining.toggle_chain_mining=Hold Chain Mining
+key.chainmining.enable=Hold Chain Mining
 key.categories.chainmining=Chain Mining

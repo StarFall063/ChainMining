@@ -149,8 +149,18 @@ dependencies {
         testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
     }
 
+    implementation(rfg.deobf("curse.maven:configanytime-870276:5212709"))
+    implementation(rfg.deobf("curse.maven:mekanism-ce-unofficial-840735:7680340"))
+    implementation(rfg.deobf("curse.maven:thermal-foundation-222880:2926428"))
+    implementation(rfg.deobf("curse.maven:thermal-expansion-69163:2926431"))
+    implementation(rfg.deobf("curse.maven:industrial-craft-242638:3838713"))
+    implementation(rfg.deobf("curse.maven:endercore-231868:4671384"))
+    implementation(rfg.deobf("curse.maven:enderio-continuous-1300712:7798590"))
+    implementation(rfg.deobf("curse.maven:cofh-world-271384:2920434"))
+    implementation(rfg.deobf("curse.maven:cofh-core-69162:2920433"))
     implementation(rfg.deobf("curse.maven:codechicken-lib-242818:2779848"))
-    implementation(rfg.deobf("curse.maven:avaritia-1.1x-unofficial-extended-life-1165010:7939693"))
+    implementation(rfg.deobf("curse.maven:redstone-flux-270789:2920436"))
+
 }
 
 apply from: 'gradle/scripts/dependencies.gradle'

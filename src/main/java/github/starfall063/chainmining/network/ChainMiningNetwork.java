@@ -1,144 +1,99 @@
 package github.starfall063.chainmining.network;
 
-import github.starfall063.chainmining.BlockMatchMode;
-import github.starfall063.chainmining.ChainMining;
-import github.starfall063.chainmining.ChainMiningStateManager;
-import github.starfall063.chainmining.ChainShapeMode;
+import github.starfall063.chainmining.ChainMiningConfig;
+import github.starfall063.chainmining.Tags;
+import github.starfall063.chainmining.util.*;
 import io.netty.buffer.ByteBuf;
-import net.minecraft.client.Minecraft;
+import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.item.ItemStack;
+import net.minecraft.util.EnumFacing;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.World;
 import net.minecraftforge.fml.common.network.ByteBufUtils;
 import net.minecraftforge.fml.common.network.NetworkRegistry;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
 import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
 import net.minecraftforge.fml.common.network.simpleimpl.SimpleNetworkWrapper;
-import net.minecraftforge.fml.relauncher.Side;
 
+import java.util.List;
 import java.util.UUID;
 
 public final class ChainMiningNetwork {
-    private static final SimpleNetworkWrapper CHANNEL = NetworkRegistry.INSTANCE.newSimpleChannel(ChainMining.MOD_ID + "_cm");
-    private static boolean initialized;
+    public static final SimpleNetworkWrapper CHANNEL = NetworkRegistry.INSTANCE.newSimpleChannel(Tags.MOD_ID);
 
     private ChainMiningNetwork() {
+
     }
 
-    public static void init() {
-        if (initialized) {
-            return;
-        }
-        initialized = true;
-        CHANNEL.registerMessage(StateMessageHandler.class, StateMessage.class, 0, Side.SERVER);
-        CHANNEL.registerMessage(ConfigMessageHandler.class, ConfigMessage.class, 1, Side.CLIENT);
-    }
+    public static class ChainMiningPacket implements IMessage {
+        private BlockPos startPos;
+        private String matchMode;
+        private UUID playerUUID;
 
-    public static void sendStateToServer(boolean enabled, ChainShapeMode shapeMode, BlockMatchMode matchMode, int neighborRange) {
-        CHANNEL.sendToServer(new StateMessage(enabled, shapeMode, matchMode, neighborRange));
-    }
+        public ChainMiningPacket() {
 
-    public static void sendConfigToPlayer(EntityPlayerMP player, int maxBlocks, int previewRenderLimit, int directionalRange, boolean ignoreHeldItem) {
-        if (player != null) {
-            CHANNEL.sendTo(new ConfigMessage(maxBlocks, previewRenderLimit, directionalRange, ignoreHeldItem), player);
-        }
-    }
-
-    public static final class StateMessage implements IMessage {
-        private boolean enabled;
-        private String shapeName;
-        private String matchModeName;
-        private int neighborRange;
-
-        public StateMessage() {
         }
 
-        public StateMessage(boolean enabled, ChainShapeMode shapeMode, BlockMatchMode matchMode, int neighborRange) {
-            this.enabled = enabled;
-            this.shapeName = (shapeMode == null ? ChainShapeMode.SHAPELESS : shapeMode).getSerializedName();
-            this.matchModeName = (matchMode == null ? BlockMatchMode.META_ONLY : matchMode).getSerializedName();
-            this.neighborRange = neighborRange;
+        public ChainMiningPacket(BlockPos startPos, BlockMatchMode matchMode, UUID playerUUID) {
+            this.startPos = startPos;
+            this.matchMode = matchMode.getSerializedName();
+            this.playerUUID = playerUUID;
         }
 
         @Override
         public void fromBytes(ByteBuf buf) {
-            this.enabled = buf.readBoolean();
-            this.shapeName = ByteBufUtils.readUTF8String(buf);
-            this.matchModeName = ByteBufUtils.readUTF8String(buf);
-            this.neighborRange = buf.readInt();
+            startPos = BlockPos.fromLong(buf.readLong());
+            matchMode = ByteBufUtils.readUTF8String(buf);
+            playerUUID = new UUID(buf.readLong(), buf.readLong());
         }
 
         @Override
         public void toBytes(ByteBuf buf) {
-            buf.writeBoolean(this.enabled);
-            ByteBufUtils.writeUTF8String(buf, this.shapeName == null ? ChainShapeMode.SHAPELESS.getSerializedName() : this.shapeName);
-            ByteBufUtils.writeUTF8String(buf, this.matchModeName == null ? BlockMatchMode.META_ONLY.getSerializedName() : this.matchModeName);
-            buf.writeInt(neighborRange);
+            buf.writeLong(startPos.toLong());
+            ByteBufUtils.writeUTF8String(buf, matchMode);
+            buf.writeLong(playerUUID.getMostSignificantBits());
+            buf.writeLong(playerUUID.getLeastSignificantBits());
         }
     }
 
-    public static final class ConfigMessage implements IMessage {
-        private int maxBlocks;
-        private int previewRenderLimit;
-        private int directionalRange;
-        private boolean ignoreHeldItem;
-
-        public ConfigMessage() {
-        }
-
-        public ConfigMessage(int maxBlocks, int previewRenderLimit, int directionalRange, boolean ignoreHeldItem) {
-            this.maxBlocks = maxBlocks;
-            this.previewRenderLimit = previewRenderLimit;
-            this.directionalRange = directionalRange;
-            this.ignoreHeldItem = ignoreHeldItem;
-        }
-
+    public static class Handler implements IMessageHandler<ChainMiningPacket, IMessage> {
         @Override
-        public void fromBytes(ByteBuf buf) {
-            this.maxBlocks = buf.readInt();
-            this.previewRenderLimit = buf.readInt();
-            this.directionalRange = buf.readInt();
-            this.ignoreHeldItem = buf.readBoolean();
-        }
+        public IMessage onMessage(ChainMiningPacket message, MessageContext context) {
+            EntityPlayerMP playerMP = context.getServerHandler().player;
+            World world = playerMP.world;
+            BlockPos pos = message.startPos;
+            BlockMatchMode mode = BlockMatchMode.fromName(message.matchMode);
 
-        @Override
-        public void toBytes(ByteBuf buf) {
-            buf.writeInt(this.maxBlocks);
-            buf.writeInt(this.previewRenderLimit);
-            buf.writeInt(this.directionalRange);
-            buf.writeBoolean(this.ignoreHeldItem);
-        }
-    }
+            playerMP.getServerWorld().addScheduledTask(() -> {
+                IBlockState state = world.getBlockState(pos);
+                if (state.getBlock().isAir(state, world, pos)) return;
 
-    public static final class StateMessageHandler implements IMessageHandler<StateMessage, IMessage> {
-        @Override
-        public IMessage onMessage(StateMessage message, MessageContext ctx) {
-            if (ctx.getServerHandler() == null || ctx.getServerHandler().player == null) {
-                return null;
-            }
-            EntityPlayerMP player = ctx.getServerHandler().player;
-            UUID playerId = player.getUniqueID();
+                BlockIdentity sourceId = BlockIdentity.from(world, pos, state, mode);
+                if (sourceId == null) return;
 
-            if (!ChainMiningStateManager.isStateUpdateAllowed(playerId)) {
-                return null;
-            }
+                ItemStack tool = playerMP.getHeldItemMainhand();
+                if (!ChainMiningConfig.SERVER.chainMiningIgnoreHeldItem) {
+                    if (ChainMiningHooks.isToolBlacklisted(tool)) return;
+                }
+                if (ChainMiningHooks.isBlockBlacklisted(world, pos, state)) return;
+                if (!playerMP.capabilities.isCreativeMode) {
+                    if (playerMP.getFoodStats().getFoodLevel() < ChainMiningConfig.SERVER.chainMiningMinFoodLevel) return;
+                }
 
-            player.getServerWorld().addScheduledTask(() ->
-                    ChainMiningStateManager.updateServerState(
-                            playerId,
-                            message.enabled,
-                            ChainShapeMode.fromName(message.shapeName),
-                            BlockMatchMode.fromName(message.matchModeName),
-                            message.neighborRange
-                    )
-            );
-            return null;
-        }
-    }
-
-    public static final class ConfigMessageHandler implements IMessageHandler<ConfigMessage, IMessage> {
-        @Override
-        public IMessage onMessage(ConfigMessage message, MessageContext ctx) {
-            Minecraft.getMinecraft().addScheduledTask(() -> ChainMiningStateManager.applySyncedConfig(message.maxBlocks, message.previewRenderLimit, message.directionalRange, message.ignoreHeldItem));
+                ChainShapeMode shapeMode = ChainShapeMode.fromName(ChainMiningConfig.CLIENT.chainMiningShape);
+                EnumFacing hitFace = ChainMiningStateManager.getHitFace();
+                List<BlockPos> blocks = ChainMiningHooks.scanBlocks(
+                        world, pos, state, sourceId, mode,
+                        ChainMiningConfig.SERVER.chainMiningMaxBlocks,
+                        ChainMiningConfig.SERVER.chainMiningNeighborRange,
+                        playerMP,
+                        shapeMode,
+                        hitFace
+                );
+                ChainMiningHooks.executeChainMining(playerMP, blocks, tool);
+            });
             return null;
         }
     }

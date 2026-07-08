@@ -1,4 +1,4 @@
-package github.starfall063.chainmining;
+package github.starfall063.chainmining.util;
 
 public enum ChainShapeMode {
     SHAPELESS("shapeless", "shape.chainmining.shapeless"),
@@ -32,13 +32,9 @@ public enum ChainShapeMode {
     }
 
     public static ChainShapeMode fromName(String name) {
-        if (name == null || name.isEmpty()) {
-            return SHAPELESS;
-        }
+        if (name == null) return SHAPELESS;
         for (ChainShapeMode mode : values()) {
-            if (mode.serializedName.equalsIgnoreCase(name) || mode.name().equalsIgnoreCase(name)) {
-                return mode;
-            }
+            if (mode.serializedName.equalsIgnoreCase(name)) return mode;
         }
         return SHAPELESS;
     }

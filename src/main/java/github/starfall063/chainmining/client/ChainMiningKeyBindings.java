@@ -4,11 +4,10 @@ import net.minecraft.client.settings.KeyBinding;
 import org.lwjgl.input.Keyboard;
 
 public final class ChainMiningKeyBindings {
-    public static final String CATEGORY = "key.categories.chainmining";
-    public static final KeyBinding TOGGLE_CHAIN_MINING = new KeyBinding(
-            "key.chainmining.toggle_chain_mining",
-            Keyboard.KEY_F6,
-            CATEGORY
+    public static final KeyBinding CHAIN_MINING_KEY = new KeyBinding(
+            "key.chainmining.enable",
+            Keyboard.KEY_GRAVE,
+            "key.chainmining.categories"
     );
 
     private ChainMiningKeyBindings() {
