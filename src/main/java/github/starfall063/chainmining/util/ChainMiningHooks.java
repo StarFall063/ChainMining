@@ -6,33 +6,47 @@ import net.minecraft.block.state.IBlockState;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.entity.item.EntityXPOrb;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.init.Enchantments;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.EnumFacing;
+import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
+import net.minecraftforge.common.ForgeHooks;
 
 import java.util.*;
 
 public final class ChainMiningHooks {
+    private static final String[] OWNER_KEYS = {"ownerUUID", "Owner", "owner"};
+    private static final Set<String> UNOWNED_MARKERS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList("", "none", "null")));
+    private static final Set<String> PUBLIC_SECURITY_MODES = Collections.unmodifiableSet(new HashSet<>(Arrays.asList("public", "trusted")));
+
     public static boolean isToolBlacklisted(ItemStack tool) {
         if (tool.isEmpty()) return false;
-        String id = Objects.requireNonNull(tool.getItem().getRegistryName()).toString();
+        ResourceLocation id = tool.getItem().getRegistryName();
+        if (id == null) return false;
+        String name = id.toString();
         for (String entry : ChainMiningConfig.SERVER.chainMiningToolBlackList) {
-            if (entry.trim().equalsIgnoreCase(id)) return true;
+            if (entry.trim().equalsIgnoreCase(name)) return true;
         }
         return false;
     }
 
     public static boolean isBlockBlacklisted(World world, BlockPos pos, IBlockState state) {
         Block block = state.getBlock();
-        String regName = Objects.requireNonNull(block.getRegistryName()).toString();
+        ResourceLocation id = block.getRegistryName();
+        if (id == null) return false;
+        String regName = id.toString();
         int meta = block.getMetaFromState(state);
         String fullId = regName + ":" + meta;
         for (String entry : ChainMiningConfig.SERVER.chainMiningBlockBlackList) {
-            if (entry.trim().equalsIgnoreCase(regName) || entry.trim().equalsIgnoreCase(fullId)) return true;
+            String e = entry.trim();
+            if (e.isEmpty()) continue;
+            if (e.equalsIgnoreCase(regName) || e.equalsIgnoreCase(fullId)) return true;
         }
         return false;
     }
@@ -42,12 +56,11 @@ public final class ChainMiningHooks {
 
         if (player != null && player.capabilities.isCreativeMode) return true;
 
-        if (ChainMiningConfig.SERVER.chainMiningIgnoreHeldItem) return true;
+       boolean canHarvest = player != null && ForgeHooks.canHarvestBlock(state.getBlock(), player, world, pos);
 
-        if (state.getMaterial().isToolNotRequired()) return true;
-
-        if (held == null || held.isEmpty()) return state.getBlock().getHarvestLevel(state) <= 0;
-        return  held.getItem().canHarvestBlock(state, held);
+       if (state.getBlockHardness(world, pos) < 0) return canHarvest;
+       if (ChainMiningConfig.SERVER.chainMiningIgnoreHeldItem) return true;
+       return canHarvest;
     }
 
     public static List<BlockPos> scanBlocks(World world, BlockPos startPos, IBlockState startState, BlockIdentity sourceId, BlockMatchMode matchMode, int maxBlocks, int neighborRange, EntityPlayer player, ChainShapeMode shapeMode, EnumFacing hitFace) {
@@ -58,9 +71,9 @@ public final class ChainMiningHooks {
         ItemStack tool = (player != null) ? player.getHeldItemMainhand() : ItemStack.EMPTY;
         return switch (shapeMode) {
             case PLANE ->
-                    scanDirectional(world, startPos, hitFace, startState, sourceId, matchMode, maxBlocks, player, tool);
+                    scanDirectional(world, startPos, hitFace, startState, sourceId, matchMode, maxBlocks, player, tool, neighborRange);
             case TUNNEL ->
-                    scanTunnel(world, startPos, hitFace, startState, sourceId, matchMode, maxBlocks, player, tool);
+                    scanTunnel(world, startPos, hitFace, startState, sourceId, matchMode, maxBlocks, player, tool, neighborRange);
             default ->
                     scanShapeless(world, startPos, startState, sourceId, matchMode, maxBlocks, neighborRange, player, tool);
         };
@@ -75,18 +88,29 @@ public final class ChainMiningHooks {
             BlockMatchMode matchMode,
             int maxBlocks,
             EntityPlayer player,
-            ItemStack tool) {
+            ItemStack tool,
+            int neighborRange) {
         List<BlockPos> result = new ArrayList<>();
         result.add(origin);
+
         if (face == null) return result;
+
         EnumFacing dir = face.getOpposite();
-        for (int depth = 1; depth < maxBlocks; depth++) {
+        int gap = 0;
+        for (int depth = 1; result.size() < maxBlocks; depth++) {
             BlockPos next = origin.offset(dir, depth);
             IBlockState state = world.getBlockState(next);
-            if (state.getBlock().isAir(state, world, next)) break;
-            if (isBlockBlacklisted(world, next, state)) continue;
-            if (!canChainMineBlock(world, next, state, player, tool)) continue;
-            if (!sourceId.matches(world, next, state, matchMode)) break;
+
+            if (state.getBlock().isAir(state, world, next)
+                    || isBlockBlacklisted(world, next, state)
+                    || isSecuredBlock(world, next, state, player)
+                    || !canChainMineBlock(world, next, state, player, tool)
+                    || !sourceId.matches(world, next, state, matchMode)) {
+                gap++;
+                if (gap > neighborRange) break;
+                continue;
+            }
+            gap = 0;
             result.add(next);
         }
         return result;
@@ -101,7 +125,8 @@ public final class ChainMiningHooks {
             BlockMatchMode matchMode,
             int maxBlocks,
             EntityPlayer player,
-            ItemStack tool) {
+            ItemStack tool,
+            int neighborRange) {
         List<BlockPos> result = new ArrayList<>();
         Set<BlockPos> added = new HashSet<>();
         if (face == null) {
@@ -110,9 +135,12 @@ public final class ChainMiningHooks {
         }
         EnumFacing dir = face.getOpposite();
         EnumFacing.Axis axis = dir.getAxis();
+        int gap = 0;
+
         for (int depth = 0; result.size() < maxBlocks; depth++) {
             BlockPos center = startPos.offset(dir, depth);
-            boolean anyAdded = false;
+            boolean layerHit = false;
+
             for (int a = -1; a <= 1; a++) {
                 for (int b = -1; b <= 1; b++) {
                     if (result.size() >= maxBlocks) break;
@@ -121,17 +149,24 @@ public final class ChainMiningHooks {
                         case Y -> center.add(a, 0, b);
                         default -> center.add(a, b, 0);
                     };
+
                     if (!added.add(candidate)) continue;
+
                     IBlockState state = world.getBlockState(candidate);
-                    if (state.getBlock().isAir(state, world, candidate)) continue;
-                    if (isBlockBlacklisted(world, candidate, state)) continue;
-                    if (!canChainMineBlock(world, candidate, state, player, tool)) continue;
-                    if (!sourceId.matches(world, candidate, state, matchMode)) continue;
+
+                    if (state.getBlock().isAir(state, world, candidate)
+                            || isBlockBlacklisted(world, candidate, state)
+                            || isSecuredBlock(world, candidate, state, player)
+                            || !canChainMineBlock(world, candidate, state, player, tool)
+                            || !sourceId.matches(world, candidate, state, matchMode)) continue;
                     result.add(candidate);
-                    anyAdded = true;
+                    layerHit = true;
                 }
             }
-            if (!anyAdded) break;
+            if (depth > 0) {
+                if (layerHit) gap = 0;
+                else { gap++; if (gap > neighborRange) break; }
+            }
         }
         return result;
     }
@@ -161,6 +196,7 @@ public final class ChainMiningHooks {
                 IBlockState nextState = world.getBlockState(next);
                 if (nextState.getBlock().isAir(nextState, world, next)) continue;
                 if (isBlockBlacklisted(world, next, nextState)) continue;
+                if (isSecuredBlock(world, next, nextState, player)) continue;
                 if (!canChainMineBlock(world, next, nextState, player, tool)) continue;
                 if (!sourceId.matches(world, next, nextState, matchMode)) continue;
                 if (result.size() >= maxBlocks) break;
@@ -172,7 +208,29 @@ public final class ChainMiningHooks {
         return result;
     }
 
-//    private static boolean isSecuredBlock()
+    private static boolean isSecuredBlock(World world, BlockPos pos, IBlockState state, EntityPlayer player) {
+        if (player == null || player.capabilities.isCreativeMode) return false;
+        if (!state.getBlock().hasTileEntity(state)) return false;
+
+        TileEntity tileEntity = world.getTileEntity(pos);
+        if (tileEntity == null) return false;
+
+        NBTTagCompound tag = tileEntity.writeToNBT(new NBTTagCompound());
+        String playerId = player.getUniqueID().toString();
+        String playerIdCompact = playerId.replace("-", "");
+        for (String key : OWNER_KEYS) {
+            if (!tag.hasKey(key, 8)) continue;
+            String owner = tag.getString(key).trim();
+            if (UNOWNED_MARKERS.contains(owner.toLowerCase(Locale.ROOT))) continue;
+            if (owner.equals(playerId) || owner.equalsIgnoreCase(playerIdCompact)) return false;
+            if (tag.hasKey("securityMode", 8)) {
+                String modeVal = tag.getString("securityMode");
+                if (PUBLIC_SECURITY_MODES.contains(modeVal.toLowerCase(Locale.ROOT))) continue;
+            }
+            return true;
+        }
+        return false;
+    }
 
     private static List<BlockPos> getNeighbors(BlockPos pos, int range) {
         List<BlockPos> neighbors = new ArrayList<>();
@@ -188,80 +246,39 @@ public final class ChainMiningHooks {
         return neighbors;
     }
 
-    public static void executeChainMining(EntityPlayer player, List<BlockPos> blocks, ItemStack tool) {
+    public static void executeChainMining(EntityPlayerMP player, List<BlockPos> blocks, ItemStack tool) {
         World world = player.world;
         BlockPos sourcePos = blocks.get(0);
-        int totalXp = 0;
-        Map<ItemKey, Integer> dropMap = new LinkedHashMap<>();
-
         for (BlockPos pos : blocks) {
+            if (pos.equals(sourcePos)) continue;
             IBlockState state = world.getBlockState(pos);
-            Block block = state.getBlock();
+            if (state.getBlock().isAir(state, world, pos)) continue;
 
             if (!player.capabilities.isCreativeMode) {
                 if (state.getBlockHardness(world, pos) < 0) continue;
-                if (!ChainMiningConfig.SERVER.chainMiningIgnoreHeldItem) {
-                    if (!tool.isEmpty() && !tool.canHarvestBlock(state)) continue;
-                }
-            }
-            if (player.capabilities.isCreativeMode) {
-                world.setBlockToAir(pos);
-                continue;
+                if (!canChainMineBlock(world, pos, state, player, tool)) continue;
+                if (player.getFoodStats().getFoodLevel() < ChainMiningConfig.SERVER.chainMiningMinFoodLevel) break;
             }
 
-            player.addExhaustion((float) ChainMiningConfig.SERVER.chainMiningExhaustionPerBlock);
-
-            if (ChainMiningConfig.SERVER.chainMiningIgnoreHeldItem || tool.isEmpty() || tool.canHarvestBlock(state)) {
-                int fortune = 0;
-                if (Enchantments.FORTUNE != null) {
-                    fortune = EnchantmentHelper.getEnchantmentLevel(Enchantments.FORTUNE, tool);
-                }
-                List<ItemStack> drops = block.getDrops(world, pos, state, fortune);
-                for (ItemStack drop : drops) {
-                    if (drop.isEmpty()) continue;
-                    ItemKey key = new ItemKey(drop);
-                    dropMap.merge(key, drop.getCount(), Integer::sum);
-                }
-
-                totalXp += block.getExpDrop(state, world, pos, fortune);
+            player.interactionManager.tryHarvestBlock(pos);
+            if (!player.capabilities.isCreativeMode) {
+                player.addExhaustion((float) ChainMiningConfig.SERVER.chainMiningExhaustionPerBlock);
             }
-
-            world.setBlockToAir(pos);
-
-            if (!tool.isEmpty()) {
-                tool.onBlockDestroyed(world, state, pos, player);
-                if (tool.isEmpty()) break;
-            }
-        }
-
-        for (Map.Entry<ItemKey, Integer> entry : dropMap.entrySet()) {
-           int total = entry.getValue();
-           ItemStack stack = entry.getKey().toStack();
-           while (total > 0) {
-               int size = Math.min(total, stack.getMaxStackSize());
-               stack.setCount(size);
-               Block.spawnAsEntity(world, sourcePos, stack.copy());
-               total -= size;
-           }
        }
-
-        if (totalXp > 0) {
-            world.spawnEntity(new EntityXPOrb(world, sourcePos.getX() + 0.5, sourcePos.getY() + 0.5, sourcePos.getZ() + 0.5, totalXp));
-        }
     }
 
-    private static final class ItemKey {
+    public static final class ItemKey {
         private final Item item;
         private final int meta;
         private final NBTTagCompound tag;
 
-        ItemKey(ItemStack stack) {
+        public ItemKey(ItemStack stack) {
             this.item = stack.getItem();
             this.meta = stack.getMetadata();
             this.tag = stack.hasTagCompound() ? Objects.requireNonNull(stack.getTagCompound()).copy() : null;
         }
 
-        ItemStack toStack() {
+        public ItemStack toStack() {
             ItemStack stack = new ItemStack(item, 1, meta);
             if (tag != null) stack.setTagCompound(tag.copy());
             return stack;

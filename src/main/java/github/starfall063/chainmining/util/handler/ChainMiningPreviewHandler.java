@@ -28,7 +28,7 @@ public class ChainMiningPreviewHandler {
         List<BlockPos> blocks = ChainMiningStateManager.getPreviewBlocks();
         if (blocks == null || blocks.isEmpty()) return;
 
-        int limit = Math.min(blocks.size(), ChainMiningConfig.SERVER.chainMiningPreviewRenderLimit);
+        int limit = Math.min(blocks.size(), ChainMiningConfig.CLIENT.chainMiningPreviewRenderLimit);
         ChainMiningStateManager.setPreviewRendered(limit);
         ChainMiningStateManager.setPreviewHidden(Math.max(0, blocks.size() - limit));
         List<BlockPos> visibleBlocks = new ArrayList<>(blocks.subList(0, limit));

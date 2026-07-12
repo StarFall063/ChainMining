@@ -1,18 +1,48 @@
 package github.starfall063.chainmining.util;
 
+import github.starfall063.chainmining.ChainMiningConfig;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.math.BlockPos;
 
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 public final class ChainMiningStateManager {
+    private static volatile boolean hasSyncedConfig = false;
+    private static volatile int syncedMaxBlocks;
+    private static volatile int syncedPreviewRenderLimit;
+    private static volatile boolean syncedIgnoreHeldItem;
+    private static volatile String[] syncedToolBlacklist = new String[0];
+    private static volatile String[] syncedBlockBlacklist = new String[0];
     private static volatile ChainMiningSelectionContext currentContext;
-    private static volatile boolean enabled;
     private static volatile List<BlockPos> previewBlocks;
     private static volatile EnumFacing hitFace;
     private static volatile int previewTotal;
     private static volatile int previewRendered;
     private static volatile int previewHidden;
+    private static volatile boolean clientEnabled;
+    private static final Map<UUID, PlayerState> SERVER_STATES = new ConcurrentHashMap<>();
+    public static boolean isClientEnabled() {
+        return clientEnabled;
+    }
+
+    public static void setClientEnabled(boolean value) {
+        clientEnabled = value;
+    }
+
+    public static PlayerState getServerState(UUID id) {
+        return SERVER_STATES.computeIfAbsent(id, k -> new PlayerState());
+    }
+
+    public static boolean isServerEnabled(UUID id) {
+        return SERVER_STATES.get(id) != null && SERVER_STATES.get(id).enabled;
+    }
+
+    public static void clearServerState(UUID id ) {
+        SERVER_STATES.remove(id);
+    }
 
     private ChainMiningStateManager() {}
 
@@ -39,20 +69,33 @@ public final class ChainMiningStateManager {
         previewHidden = 0;
     }
 
+    public static void applySyncedConfig(int maxBlocks, boolean ignoreHeldItem, String[] toolBlacklist, String[] blockBlacklist) {
+        syncedMaxBlocks = maxBlocks;
+        syncedIgnoreHeldItem = ignoreHeldItem;
+        syncedToolBlacklist = toolBlacklist;
+        syncedBlockBlacklist = blockBlacklist;
+        hasSyncedConfig = true;
+    }
+
+    public static int getEffectiveMaxBlocks() {
+        return hasSyncedConfig ? syncedMaxBlocks : ChainMiningConfig.SERVER.chainMiningMaxBlocks;
+    }
+    public static boolean getEffectiveIgnoreHeldItem() {
+        return hasSyncedConfig ? syncedIgnoreHeldItem : ChainMiningConfig.SERVER.chainMiningIgnoreHeldItem;
+    }
+    public static String[] getEffectiveToolBlacklist() {
+        return hasSyncedConfig ? syncedToolBlacklist : ChainMiningConfig.SERVER.chainMiningToolBlackList;
+    }
+    public static String[] getEffectiveBlockBlacklist() {
+        return hasSyncedConfig ? syncedBlockBlacklist : ChainMiningConfig.SERVER.chainMiningBlockBlackList;
+    }
+
     public static int getPreviewTotal() { return previewTotal; }
     public static void setPreviewTotal(int n) { previewTotal = n; }
     public static int getPreviewRendered() { return previewRendered; }
     public static void setPreviewRendered(int n) { previewRendered = n; }
     public static int getPreviewHidden() { return previewHidden; }
     public static void setPreviewHidden(int n) { previewHidden = n; }
-
-    public static boolean isEnabled() {
-        return enabled;
-    }
-
-    public static void setEnabled(boolean enabled) {
-        ChainMiningStateManager.enabled = enabled;
-    }
 
     public static void setContext(ChainMiningSelectionContext context) {
         currentContext = context;
@@ -68,5 +111,15 @@ public final class ChainMiningStateManager {
 
     public static boolean hasContext() {
         return currentContext != null;
+    }
+
+    public static final class PlayerState {
+        public boolean enabled;
+        public String shape = "SHAPELESS";
+        public String matchMode = "meta";
+        public int neighborRange = 1;
+        public EnumFacing hitFace = EnumFacing.UP;
+        public boolean hasTarget;
+        public long originPos;
     }
 }

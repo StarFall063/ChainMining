@@ -20,7 +20,7 @@ public class ChainMiningHudHandler {
     public static void onRenderOverlay(RenderGameOverlayEvent.Text event) {
         Minecraft mc = Minecraft.getMinecraft();
         if (mc.player == null || mc.world == null) return;
-        if (!ChainMiningStateManager.isEnabled()) return;
+        if (!ChainMiningStateManager.isClientEnabled()) return;
 
         BlockMatchMode matchMode = BlockMatchMode.fromName(ChainMiningConfig.CLIENT.chainMiningMatchMode);
         ChainShapeMode shapeMode = ChainShapeMode.fromName(ChainMiningConfig.CLIENT.chainMiningShape);
@@ -34,7 +34,7 @@ public class ChainMiningHudHandler {
 
         target.add(ChainMiningLang.tr("overlay.chainmining.info",
                 ChainMiningLang.tr(matchMode.getTranslationKey()),
-                ChainMiningConfig.SERVER.chainMiningNeighborRange));
+                ChainMiningConfig.CLIENT.chainMiningNeighborRange));
 
         List<BlockPos> preview = ChainMiningStateManager.getPreviewBlocks();
         int total = preview != null ? preview.size() : 0;

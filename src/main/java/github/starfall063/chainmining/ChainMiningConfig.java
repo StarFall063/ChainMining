@@ -1,14 +1,18 @@
 package github.starfall063.chainmining;
 
 import com.cleanroommc.configanytime.ConfigAnytime;
+import github.starfall063.chainmining.network.ChainMiningNetwork;
+import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.server.MinecraftServer;
 import net.minecraftforge.common.config.Config;
 import net.minecraftforge.common.config.ConfigManager;
 import net.minecraftforge.fml.client.event.ConfigChangedEvent;
+import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
 @Mod.EventBusSubscriber(modid = Tags.MOD_ID)
-@Config(modid = Tags.MOD_ID, name = Tags.MOD_NAME)
+@Config(modid = Tags.MOD_ID, name = Tags.MOD_ID)
 public class ChainMiningConfig {
     @Config.Name("Client")
     public static final Client CLIENT = new Client();
@@ -22,8 +26,8 @@ public class ChainMiningConfig {
         public String chainMiningShape = "SHAPELESS";
 
         @Config.Name("ChainMiningMatchMode")
-        @Config.Comment({"Block match mode: META_ONLY, NBT_ONLY, REGISTRY_ONLY, NBT_META", "方块匹配模式: 仅meta, 仅nbt, 仅注册名, meta和nbt"})
-        public String chainMiningMatchMode = "NBT_META";
+        @Config.Comment({"Block match mode: meta, nbt, registry, nbt_meta", "方块匹配模式: 仅meta, 仅nbt, 仅注册名, meta和nbt"})
+        public String chainMiningMatchMode = "meta";
 
         @Config.Name("ChainMiningHudPosition")
         @Config.Comment({"HUD overlay position: top_left, top_right, bottom_left, bottom_right", "HUD位置: 左上, 右上, 左下, 右下"})
@@ -32,13 +36,6 @@ public class ChainMiningConfig {
         @Config.Name("ChainMiningPreviewColor")
         @Config.Comment({"Preview wireframe color in hex ARGB (e.g. FFE65CEB)", "预览边框颜色(十六进制ARGB, 例如: FFE65CEB)"})
         public String chainMiningPreviewColor = "FFE65CEB";
-    }
-
-    public static class Server {
-        @Config.Name("ChainMiningMaxBlocks")
-        @Config.Comment({"Maximum number of chain mining at once", "单次连锁的最大数量"})
-        @Config.RangeInt(min = 1, max = 1024)
-        public int chainMiningMaxBlocks = 128;
 
         @Config.Name("ChainMiningPreviewRenderLimit")
         @Config.Comment({"Maximum number of renders for a single chain mining preview", "单次连锁预览的最大渲染数量"})
@@ -49,6 +46,13 @@ public class ChainMiningConfig {
         @Config.Comment({"Shapeless chain mining neighbor search radius (5 = up to 5 blocks away)", "连锁挖掘相邻搜索半径 (5=最多5格远)"})
         @Config.RangeInt(min = 1, max = 5)
         public int chainMiningNeighborRange = 1;
+    }
+
+    public static class Server {
+        @Config.Name("ChainMiningMaxBlocks")
+        @Config.Comment({"Maximum number of chain mining at once", "单次连锁的最大数量"})
+        @Config.RangeInt(min = 1, max = 1024)
+        public int chainMiningMaxBlocks = 128;
 
         @Config.Name("ChainMiningExhaustionPerBlock")
         @Config.Comment({"Exhaustion added for each block mined by chain mining", "连锁每个方块消耗的饥饿值"})
@@ -89,6 +93,18 @@ public class ChainMiningConfig {
     public static void onConfigChanged(ConfigChangedEvent.OnConfigChangedEvent event) {
         if (event.getModID().equals(Tags.MOD_ID)) {
             ConfigManager.sync(Tags.MOD_ID, Config.Type.INSTANCE);
+
+            MinecraftServer server = FMLCommonHandler.instance().getMinecraftServerInstance();
+            if (server != null) {
+                ChainMiningNetwork.ConfigMessage msg = new ChainMiningNetwork.ConfigMessage(
+                        SERVER.chainMiningMaxBlocks,
+                        SERVER.chainMiningIgnoreHeldItem,
+                        SERVER.chainMiningToolBlackList,
+                        SERVER.chainMiningBlockBlackList);
+                for (EntityPlayerMP player : server.getPlayerList().getPlayers()) {
+                    ChainMiningNetwork.CHANNEL.sendTo(msg, player);
+                }
+            }
         }
     }
 }
