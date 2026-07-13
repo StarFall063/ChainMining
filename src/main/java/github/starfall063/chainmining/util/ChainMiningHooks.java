@@ -3,15 +3,11 @@ package github.starfall063.chainmining.util;
 import github.starfall063.chainmining.ChainMiningConfig;
 import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
-import net.minecraft.enchantment.EnchantmentHelper;
-import net.minecraft.entity.item.EntityXPOrb;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.init.Enchantments;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.BlockPos;
@@ -19,13 +15,8 @@ import net.minecraft.world.World;
 import net.minecraftforge.common.ForgeHooks;
 
 import java.util.*;
-import java.util.regex.Pattern;
 
 public final class ChainMiningHooks {
-    private static final String[] OWNER_KEYS = {"ownerUUID", "Owner", "owner"};
-    private static final Set<String> UNOWNED_MARKERS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList("", "none", "null")));
-    private static final Set<String> PUBLIC_SECURITY_MODES = Collections.unmodifiableSet(new HashSet<>(Arrays.asList("public", "trusted")));
-
     public static boolean isToolBlacklisted(ItemStack tool) {
         if (tool.isEmpty()) return false;
         ResourceLocation id = tool.getItem().getRegistryName();
@@ -105,7 +96,6 @@ public final class ChainMiningHooks {
 
             if (state.getBlock().isAir(state, world, next)
                     || isBlockBlacklisted(world, next, state)
-                    || isSecuredBlock(world, next, state, player)
                     || !canChainMineBlock(world, next, state, player, tool)
                     || !sourceId.matches(world, next, state, matchMode)) {
                 gap++;
@@ -135,6 +125,9 @@ public final class ChainMiningHooks {
             result.add(startPos);
             return result;
         }
+        result.add(startPos);
+        added.add(startPos);
+
         EnumFacing dir = face.getOpposite();
         EnumFacing.Axis axis = dir.getAxis();
         int gap = 0;
@@ -158,7 +151,6 @@ public final class ChainMiningHooks {
 
                     if (state.getBlock().isAir(state, world, candidate)
                             || isBlockBlacklisted(world, candidate, state)
-                            || isSecuredBlock(world, candidate, state, player)
                             || !canChainMineBlock(world, candidate, state, player, tool)
                             || !sourceId.matches(world, candidate, state, matchMode)) continue;
                     result.add(candidate);
@@ -198,7 +190,6 @@ public final class ChainMiningHooks {
                 IBlockState nextState = world.getBlockState(next);
                 if (nextState.getBlock().isAir(nextState, world, next)) continue;
                 if (isBlockBlacklisted(world, next, nextState)) continue;
-                if (isSecuredBlock(world, next, nextState, player)) continue;
                 if (!canChainMineBlock(world, next, nextState, player, tool)) continue;
                 if (!sourceId.matches(world, next, nextState, matchMode)) continue;
                 if (result.size() >= maxBlocks) break;
@@ -208,30 +199,6 @@ public final class ChainMiningHooks {
             if (result.size() >= maxBlocks) break;
         }
         return result;
-    }
-
-    private static boolean isSecuredBlock(World world, BlockPos pos, IBlockState state, EntityPlayer player) {
-        if (player == null || player.capabilities.isCreativeMode) return false;
-        if (!state.getBlock().hasTileEntity(state)) return false;
-
-        TileEntity tileEntity = world.getTileEntity(pos);
-        if (tileEntity == null) return false;
-
-        NBTTagCompound tag = tileEntity.writeToNBT(new NBTTagCompound());
-        String playerId = player.getUniqueID().toString();
-        String playerIdCompact = playerId.replace("-", "");
-        for (String key : OWNER_KEYS) {
-            if (!tag.hasKey(key, 8)) continue;
-            String owner = tag.getString(key).trim();
-            if (UNOWNED_MARKERS.contains(owner.toLowerCase(Locale.ROOT))) continue;
-            if (owner.equals(playerId) || owner.equalsIgnoreCase(playerIdCompact)) return false;
-            if (tag.hasKey("securityMode", 8)) {
-                String modeVal = tag.getString("securityMode");
-                if (PUBLIC_SECURITY_MODES.contains(modeVal.toLowerCase(Locale.ROOT))) continue;
-            }
-            return true;
-        }
-        return false;
     }
 
     private static List<BlockPos> getNeighbors(BlockPos pos, int range) {
@@ -260,6 +227,12 @@ public final class ChainMiningHooks {
                 if (state.getBlockHardness(world, pos) < 0) continue;
                 if (!canChainMineBlock(world, pos, state, player, tool)) continue;
                 if (player.getFoodStats().getFoodLevel() < ChainMiningConfig.SERVER.chainMiningMinFoodLevel) break;
+            }
+
+            if (!player.capabilities.isCreativeMode) {
+                if (state.getBlockHardness(world, pos) < 0) continue;
+                float realHard = state.getPlayerRelativeBlockHardness(player, world, pos);
+                if (realHard <= 0F) continue;
             }
 
             player.interactionManager.tryHarvestBlock(pos);
