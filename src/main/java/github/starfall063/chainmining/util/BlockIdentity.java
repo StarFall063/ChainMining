@@ -98,6 +98,8 @@ public final class BlockIdentity {
     }
 
     public boolean matches(World world, BlockPos pos, IBlockState state, BlockMatchMode matchMode) {
+        if (matchMode.shouldMatchNbt()) refreshWhitelist();
+        
         ResourceLocation id = state.getBlock().getRegistryName();
         if (id == null) return false;
         String targetBockId = normalizeBlockId(id.toString());

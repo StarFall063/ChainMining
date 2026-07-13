@@ -6,16 +6,11 @@ import github.starfall063.chainmining.Tags;
 import github.starfall063.chainmining.client.ChainMiningKeyBindings;
 import github.starfall063.chainmining.network.ChainMiningNetwork;
 import github.starfall063.chainmining.util.BlockMatchMode;
-import github.starfall063.chainmining.util.ChainMiningHooks;
 import github.starfall063.chainmining.util.ChainMiningStateManager;
 import github.starfall063.chainmining.util.ChainShapeMode;
-import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.util.EnumFacing;
-import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.RayTraceResult;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraftforge.client.event.MouseEvent;
@@ -35,7 +30,6 @@ public class ChainMiningInputHandler {
     private static int lastHitFace = -114514;
     private static long lastOrigin = Long.MIN_VALUE;
     private static boolean lastHasTarget;
-    private static Item lastHeldItem;
 
     @SubscribeEvent
     public static void onClientTick(TickEvent.ClientTickEvent event) {
@@ -53,7 +47,7 @@ public class ChainMiningInputHandler {
         boolean hasTarget = false;
         long originPos = 0L;
         int face = -114514;
-        if (mc.objectMouseOver != null && mc.objectMouseOver.typeOfHit == RayTraceResult.Type.BLOCK && mc.objectMouseOver.getBlockPos() != null) {
+        if (mc.objectMouseOver != null && mc.objectMouseOver.typeOfHit == RayTraceResult.Type.BLOCK) {
             hasTarget = true;
             originPos = mc.objectMouseOver.getBlockPos().toLong();
             face = mc.objectMouseOver.sideHit.ordinal();
@@ -90,12 +84,8 @@ public class ChainMiningInputHandler {
         String shape = ChainMiningConfig.CLIENT.chainMiningShape;
         String matchMode = ChainMiningConfig.CLIENT.chainMiningMatchMode;
         int range = ChainMiningConfig.CLIENT.chainMiningNeighborRange;
-        Item item = mc.player.getHeldItemMainhand().getItem();
-        if (item != lastHeldItem) {
-            ChainMiningStateManager.clearPreview();
-        }
 
-        if (enabled == lastEnabled && shape.equalsIgnoreCase(lastShape) && matchMode.equalsIgnoreCase(lastMatchMode) && range == lastNeighborRange && face == lastHitFace && hasTarget == lastHasTarget && origin == lastOrigin && item == lastHeldItem) return;
+        if (enabled == lastEnabled && shape.equalsIgnoreCase(lastShape) && matchMode.equalsIgnoreCase(lastMatchMode) && range == lastNeighborRange && face == lastHitFace && hasTarget == lastHasTarget && origin == lastOrigin ) return;
 
         lastEnabled = enabled;
         lastShape = shape;
@@ -104,7 +94,6 @@ public class ChainMiningInputHandler {
         lastHitFace = face;
         lastHasTarget = hasTarget;
         lastOrigin = origin;
-        lastHeldItem = item;
 
         ChainMiningNetwork.CHANNEL.sendToServer(new ChainMiningNetwork.StateMessage(enabled, shape, matchMode, range, face, hasTarget, origin));
     }

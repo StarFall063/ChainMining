@@ -29,16 +29,19 @@ public class ChainMiningHudHandler {
                 && !"bottom_right".equals(ChainMiningConfig.CLIENT.chainMiningHudPosition);
         List<String> target = left ? event.getLeft() : event.getRight();
 
-        target.add(ChainMiningLang.tr("overlay.chainmining.status",
-                ChainMiningLang.tr(shapeMode.getTranslationKey())));
+        target.add(ChainMiningLang.tr(matchMode.getTranslationKey()) + " / " + ChainMiningLang.tr(shapeMode.getTranslationKey()));
 
-        target.add(ChainMiningLang.tr("overlay.chainmining.info",
-                ChainMiningLang.tr(matchMode.getTranslationKey()),
-                ChainMiningConfig.CLIENT.chainMiningNeighborRange));
+        if (!ChainMiningConfig.CLIENT.chainMiningEnablePreview) {
+            target.add(ChainMiningLang.tr("overlay.chainmining.disable"));
+        } else {
+            target.add(ChainMiningLang.tr("overlay.chainmining.info",
+                    ChainMiningLang.tr(matchMode.getTranslationKey()),
+                    ChainMiningConfig.CLIENT.chainMiningNeighborRange));
+        }
 
         List<BlockPos> preview = ChainMiningStateManager.getPreviewBlocks();
-        int total = preview != null ? preview.size() : 0;
-        if (total > 0) {
+        if (preview != null && !preview.isEmpty()) {
+            int total = preview.size();
             int rendered = ChainMiningStateManager.getPreviewRendered();
             int hidden = ChainMiningStateManager.getPreviewHidden();
             target.add(ChainMiningLang.tr("overlay.chainmining.count", total, rendered, hidden));

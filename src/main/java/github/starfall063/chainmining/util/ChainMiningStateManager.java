@@ -12,7 +12,6 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class ChainMiningStateManager {
     private static volatile boolean hasSyncedConfig = false;
     private static volatile int syncedMaxBlocks;
-    private static volatile int syncedPreviewRenderLimit;
     private static volatile boolean syncedIgnoreHeldItem;
     private static volatile String[] syncedToolBlacklist = new String[0];
     private static volatile String[] syncedBlockBlacklist = new String[0];
@@ -24,6 +23,7 @@ public final class ChainMiningStateManager {
     private static volatile int previewHidden;
     private static volatile boolean clientEnabled;
     private static final Map<UUID, PlayerState> SERVER_STATES = new ConcurrentHashMap<>();
+
     public static boolean isClientEnabled() {
         return clientEnabled;
     }
@@ -121,5 +121,6 @@ public final class ChainMiningStateManager {
         public EnumFacing hitFace = EnumFacing.UP;
         public boolean hasTarget;
         public long originPos;
+        public boolean dirty;
     }
 }

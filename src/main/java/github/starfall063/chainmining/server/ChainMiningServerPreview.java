@@ -9,6 +9,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
 import java.util.List;
+import java.util.UUID;
 
 public final class ChainMiningServerPreview {
     private ChainMiningServerPreview() {
@@ -16,7 +17,8 @@ public final class ChainMiningServerPreview {
     }
 
     public static void recompute(EntityPlayerMP player) {
-        ChainMiningStateManager.PlayerState state = ChainMiningStateManager.getServerState(player.getUniqueID());
+        UUID uuid = player.getUniqueID();
+        ChainMiningStateManager.PlayerState state = ChainMiningStateManager.getServerState(uuid);
         if (!state.enabled || !state.hasTarget) {
             send(player, 0, new long[0]);
             return;
@@ -25,7 +27,7 @@ public final class ChainMiningServerPreview {
         World world = player.world;
         BlockPos origin = BlockPos.fromLong(state.originPos);
         IBlockState sState = world.getBlockState(origin);
-        if (sState.getBlock().isAir(sState, world, origin) || ChainMiningHooks.isBlockBlacklisted(world, origin, sState) || ChainMiningHooks.isToolBlacklisted(player.getHeldItemMainhand()) || !ChainMiningHooks.canChainMineBlock(world, origin, sState, player, player.getHeldItemMainhand())) {
+        if (sState.getBlock().isAir(sState, world, origin) || ChainMiningHooks.isToolBlacklisted(player.getHeldItemMainhand()) || ChainMiningHooks.isBlockBlacklisted(world, origin, sState) || !ChainMiningHooks.canChainMineBlock(world, origin, sState, player, player.getHeldItemMainhand())) {
             send(player, 0, new long[0]);
             return;
         }
@@ -38,12 +40,10 @@ public final class ChainMiningServerPreview {
             return;
         }
 
-        List<BlockPos> blocks = ChainMiningHooks.scanBlocks(world, origin, sState, id, mode, ChainMiningConfig.SERVER.chainMiningMaxBlocks, state.neighborRange, player, shape, state.hitFace);
-        int total = blocks.size();
+        List<BlockPos> blockPos = ChainMiningHooks.scanBlocks(world, origin, sState, id, mode, ChainMiningConfig.SERVER.chainMiningMaxBlocks, state.neighborRange, player, shape, state.hitFace);
+        int total = blockPos.size();
         long[] array = new long[total];
-        for (int i = 0; i < total; i++) {
-            array[i] = blocks.get(i).toLong();
-        }
+        for (int i = 0; i < total; i++) array[i] = blockPos.get(i).toLong();
         send(player, total, array);
     }
 

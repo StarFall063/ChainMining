@@ -7,7 +7,7 @@ public final class ChainMiningKeyBindings {
     public static final KeyBinding CHAIN_MINING_KEY = new KeyBinding(
             "key.chainmining.enable",
             Keyboard.KEY_GRAVE,
-            "key.chainmining.categories"
+            "key.categories.chainmining"
     );
 
     private ChainMiningKeyBindings() {

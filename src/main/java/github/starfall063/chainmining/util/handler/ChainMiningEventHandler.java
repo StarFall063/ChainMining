@@ -66,7 +66,7 @@ public class ChainMiningEventHandler {
             SESSIONS.remove(uuid);
             ACTIVE.remove(uuid);
             flushSession(playerMP.world, s);
-            ChainMiningServerPreview.recompute(playerMP);
+            playerState.dirty = true;
         }
     }
 

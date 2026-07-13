@@ -19,6 +19,7 @@ import net.minecraft.world.World;
 import net.minecraftforge.common.ForgeHooks;
 
 import java.util.*;
+import java.util.regex.Pattern;
 
 public final class ChainMiningHooks {
     private static final String[] OWNER_KEYS = {"ownerUUID", "Owner", "owner"};
@@ -32,6 +33,7 @@ public final class ChainMiningHooks {
         String name = id.toString();
         for (String entry : ChainMiningConfig.SERVER.chainMiningToolBlackList) {
             if (entry.trim().equalsIgnoreCase(name)) return true;
+            if (matchesWildcard(entry.trim(), name)) return true;
         }
         return false;
     }
@@ -46,7 +48,7 @@ public final class ChainMiningHooks {
         for (String entry : ChainMiningConfig.SERVER.chainMiningBlockBlackList) {
             String e = entry.trim();
             if (e.isEmpty()) continue;
-            if (e.equalsIgnoreCase(regName) || e.equalsIgnoreCase(fullId)) return true;
+            if (matchesWildcard(e, regName) || matchesWildcard(e, fullId)) return true;
         }
         return false;
     }
@@ -265,6 +267,16 @@ public final class ChainMiningHooks {
                 player.addExhaustion((float) ChainMiningConfig.SERVER.chainMiningExhaustionPerBlock);
             }
        }
+    }
+
+    private static boolean matchesWildcard(String pattern, String text) {
+        String[] parts = pattern.split("\\*", -1);
+        StringBuilder regex = new StringBuilder();
+        for (int i = 0; i < parts.length; i++) {
+            if (i > 0) regex.append(".*");
+            regex.append(java.util.regex.Pattern.quote(parts[i]));
+        }
+        return text.matches(regex.toString());
     }
 
     public static final class ItemKey {

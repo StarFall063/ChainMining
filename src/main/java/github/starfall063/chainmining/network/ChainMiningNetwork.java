@@ -57,10 +57,10 @@ public final class ChainMiningNetwork {
         }
 
         public static class Handler implements IMessageHandler<PreviewMessage, IMessage> {
-
             @Override
             public IMessage onMessage(PreviewMessage message, MessageContext ctx) {
                 FMLCommonHandler.instance().getWorldThread(ctx.netHandler).addScheduledTask(() -> {
+
                     List<BlockPos> blocks = new ArrayList<>(message.pos.length);
                     for (long p : message.pos) {
                         blocks.add(BlockPos.fromLong(p));
@@ -68,8 +68,7 @@ public final class ChainMiningNetwork {
                    ChainMiningStateManager.setPreviewBlocks(blocks);
                    ChainMiningStateManager.setPreviewTotal(message.totalCount);
                    ChainMiningStateManager.setPreviewRendered(blocks.size());
-                   ChainMiningStateManager.setPreviewHidden(Math.max(0, message.totalCount) - blocks.size());
-
+                   ChainMiningStateManager.setPreviewHidden(Math.max(0, message.totalCount - blocks.size()));
                 });
                 return null;
             }
@@ -194,11 +193,11 @@ public final class ChainMiningNetwork {
                     playerState.enabled = message.enabled;
                     playerState.shape = message.shape;
                     playerState.matchMode = message.matchMode;
-                    playerState.neighborRange = message.neighborRange;
+                    playerState.neighborRange = Math.max(1, Math.min(message.neighborRange, 5));
                     playerState.hitFace = (message.hitFaceOrdinal < 0 || message.hitFaceOrdinal >= EnumFacing.values().length) ? null : EnumFacing.values()[message.hitFaceOrdinal];
                     playerState.hasTarget = message.hasTarget;
                     playerState.originPos = message.originPos;
-                    ChainMiningServerPreview.recompute(playerMP);
+                    playerState.dirty = true;
                 });
                 return null;
             }

@@ -16,7 +16,9 @@ import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.relauncher.Side;
 import org.lwjgl.opengl.GL11;
 
+import java.awt.*;
 import java.util.*;
+import java.util.List;
 
 @Mod.EventBusSubscriber(Side.CLIENT)
 public class ChainMiningPreviewHandler {
@@ -26,7 +28,9 @@ public class ChainMiningPreviewHandler {
     @SubscribeEvent
     public static void onRenderWorldLast(RenderWorldLastEvent event) {
         List<BlockPos> blocks = ChainMiningStateManager.getPreviewBlocks();
-        if (blocks == null || blocks.isEmpty()) return;
+        if (blocks == null || blocks.isEmpty() || !ChainMiningStateManager.isClientEnabled()) return;
+
+        if (!ChainMiningConfig.CLIENT.chainMiningEnablePreview || !ChainMiningStateManager.isClientEnabled()) return;
 
         int limit = Math.min(blocks.size(), ChainMiningConfig.CLIENT.chainMiningPreviewRenderLimit);
         ChainMiningStateManager.setPreviewRendered(limit);
@@ -52,7 +56,20 @@ public class ChainMiningPreviewHandler {
         GlStateManager.depthMask(false);
         GlStateManager.glLineWidth(2.0F);
 
-        int color = Integer.parseUnsignedInt(ChainMiningConfig.CLIENT.chainMiningPreviewColor.trim(), 16);
+        int color;
+        String colorCfg = ChainMiningConfig.CLIENT.chainMiningPreviewColor.trim();
+        if ("rainbow".equalsIgnoreCase(colorCfg)) {
+            long tick = Minecraft.getSystemTime();
+            float hue = (tick % 3000L) / 3000F;
+            color = Color.HSBtoRGB(hue, 1.0F, 1.0F);
+        } else {
+            try {
+                color = Integer.parseUnsignedInt(ChainMiningConfig.CLIENT.chainMiningPreviewColor.trim(), 16);
+            } catch (NumberFormatException e) {
+                color = 0xFFE65CEB;
+            }
+        }
+
         int r = (color >> 16) & 0xFF;
         int g = (color >> 8) & 0xFF;
         int b = color & 0xFF;
