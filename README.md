@@ -1,7 +1,6 @@
 # Chain Mining / 连锁挖矿
 
 [![Minecraft](https://img.shields.io/badge/Minecraft-1.12.2-brightgreen)](https://www.minecraft.net/)
-[![Forge](https://img.shields.io/badge/Forge-1.12.2-orange)](https://files.minecraftforge.net/)
 [![License](https://img.shields.io/badge/License-MIT-blue)](LICENSE)
 
 [English](#english) | [中文](#中文)
