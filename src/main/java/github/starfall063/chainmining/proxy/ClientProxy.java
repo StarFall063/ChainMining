@@ -1,7 +1,6 @@
 package github.starfall063.chainmining.proxy;
 
 import github.starfall063.chainmining.client.ChainMiningKeyBindings;
-import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.client.registry.ClientRegistry;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;

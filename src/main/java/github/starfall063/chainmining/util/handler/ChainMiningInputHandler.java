@@ -10,7 +10,6 @@ import github.starfall063.chainmining.util.ChainMiningStateManager;
 import github.starfall063.chainmining.util.ChainShapeMode;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiScreen;
-import net.minecraft.item.Item;
 import net.minecraft.util.math.RayTraceResult;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraftforge.client.event.MouseEvent;

@@ -1,6 +1,5 @@
 package github.starfall063.chainmining.util;
 
-import github.starfall063.chainmining.ChainMiningConfig;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.math.BlockPos;
 
@@ -10,12 +9,6 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 public final class ChainMiningStateManager {
-    private static volatile boolean hasSyncedConfig = false;
-    private static volatile int syncedMaxBlocks;
-    private static volatile boolean syncedIgnoreHeldItem;
-    private static volatile String[] syncedToolBlacklist = new String[0];
-    private static volatile String[] syncedBlockBlacklist = new String[0];
-    private static volatile ChainMiningSelectionContext currentContext;
     private static volatile List<BlockPos> previewBlocks;
     private static volatile EnumFacing hitFace;
     private static volatile int previewTotal;
@@ -69,49 +62,12 @@ public final class ChainMiningStateManager {
         previewHidden = 0;
     }
 
-    public static void applySyncedConfig(int maxBlocks, boolean ignoreHeldItem, String[] toolBlacklist, String[] blockBlacklist) {
-        syncedMaxBlocks = maxBlocks;
-        syncedIgnoreHeldItem = ignoreHeldItem;
-        syncedToolBlacklist = toolBlacklist;
-        syncedBlockBlacklist = blockBlacklist;
-        hasSyncedConfig = true;
-    }
-
-    public static int getEffectiveMaxBlocks() {
-        return hasSyncedConfig ? syncedMaxBlocks : ChainMiningConfig.SERVER.chainMiningMaxBlocks;
-    }
-    public static boolean getEffectiveIgnoreHeldItem() {
-        return hasSyncedConfig ? syncedIgnoreHeldItem : ChainMiningConfig.SERVER.chainMiningIgnoreHeldItem;
-    }
-    public static String[] getEffectiveToolBlacklist() {
-        return hasSyncedConfig ? syncedToolBlacklist : ChainMiningConfig.SERVER.chainMiningToolBlackList;
-    }
-    public static String[] getEffectiveBlockBlacklist() {
-        return hasSyncedConfig ? syncedBlockBlacklist : ChainMiningConfig.SERVER.chainMiningBlockBlackList;
-    }
-
     public static int getPreviewTotal() { return previewTotal; }
     public static void setPreviewTotal(int n) { previewTotal = n; }
     public static int getPreviewRendered() { return previewRendered; }
     public static void setPreviewRendered(int n) { previewRendered = n; }
     public static int getPreviewHidden() { return previewHidden; }
     public static void setPreviewHidden(int n) { previewHidden = n; }
-
-    public static void setContext(ChainMiningSelectionContext context) {
-        currentContext = context;
-    }
-
-    public static ChainMiningSelectionContext getContext() {
-        return currentContext;
-    }
-
-    public static void clearContext() {
-        currentContext = null;
-    }
-
-    public static boolean hasContext() {
-        return currentContext != null;
-    }
 
     public static final class PlayerState {
         public boolean enabled;

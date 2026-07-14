@@ -30,11 +30,11 @@ public class ChainMiningConfig {
         public String chainMiningMatchMode = "meta";
 
         @Config.Name("ChainMiningHudPosition")
-        @Config.Comment({"HUD overlay position: top_left, top_right, bottom_left, bottom_right.", "HUD位置: 左上, 右上, 左下, 右下"})
+        @Config.Comment({"HUD overlay position: top_left, top_right.", "HUD位置: 左上, 右上"})
         public String chainMiningHudPosition = "top_left";
 
         @Config.Name("ChainMiningPreviewColor")
-        @Config.Comment({"Preview wireframe color in hex ARGB, or 'rainbow' (e.g. FFE65CEB)", "预览边框颜色, 或填入 'rainbow' (十六进制ARGB, 例如: FFE65CEB)"})
+        @Config.Comment({"Preview wireframe color in hex ARGB, or 'rainbow' (e.g. FFE65CEB)", "预览边框颜色, 或 'rainbow' (十六进制ARGB, 例如: FFE65CEB)"})
         public String chainMiningPreviewColor = "FFE65CEB";
 
         @Config.Name("ChainMiningPreviewRenderLimit")
@@ -103,18 +103,6 @@ public class ChainMiningConfig {
     public static void onConfigChanged(ConfigChangedEvent.OnConfigChangedEvent event) {
         if (event.getModID().equals(Tags.MOD_ID)) {
             ConfigManager.sync(Tags.MOD_ID, Config.Type.INSTANCE);
-
-            MinecraftServer server = FMLCommonHandler.instance().getMinecraftServerInstance();
-            if (server != null) {
-                ChainMiningNetwork.ConfigMessage msg = new ChainMiningNetwork.ConfigMessage(
-                        SERVER.chainMiningMaxBlocks,
-                        SERVER.chainMiningIgnoreHeldItem,
-                        SERVER.chainMiningToolBlackList,
-                        SERVER.chainMiningBlockBlackList);
-                for (EntityPlayerMP player : server.getPlayerList().getPlayers()) {
-                    ChainMiningNetwork.CHANNEL.sendTo(msg, player);
-                }
-            }
         }
     }
 }

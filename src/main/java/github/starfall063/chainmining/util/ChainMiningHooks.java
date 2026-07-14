@@ -51,7 +51,7 @@ public final class ChainMiningHooks {
 
        boolean canHarvest = player != null && ForgeHooks.canHarvestBlock(state.getBlock(), player, world, pos);
 
-       if (state.getBlockHardness(world, pos) < 0) return canHarvest;
+        if (player != null && state.getPlayerRelativeBlockHardness(player, world, pos) <= 0F) return false;
        if (ChainMiningConfig.SERVER.chainMiningIgnoreHeldItem) return true;
        return canHarvest;
     }
@@ -217,22 +217,12 @@ public final class ChainMiningHooks {
 
     public static void executeChainMining(EntityPlayerMP player, List<BlockPos> blocks, ItemStack tool) {
         World world = player.world;
-        BlockPos sourcePos = blocks.get(0);
         for (BlockPos pos : blocks) {
-            if (pos.equals(sourcePos)) continue;
             IBlockState state = world.getBlockState(pos);
             if (state.getBlock().isAir(state, world, pos)) continue;
 
             if (!player.capabilities.isCreativeMode) {
-                if (state.getBlockHardness(world, pos) < 0) continue;
-                if (!canChainMineBlock(world, pos, state, player, tool)) continue;
                 if (player.getFoodStats().getFoodLevel() < ChainMiningConfig.SERVER.chainMiningMinFoodLevel) break;
-            }
-
-            if (!player.capabilities.isCreativeMode) {
-                if (state.getBlockHardness(world, pos) < 0) continue;
-                float realHard = state.getPlayerRelativeBlockHardness(player, world, pos);
-                if (realHard <= 0F) continue;
             }
 
             player.interactionManager.tryHarvestBlock(pos);

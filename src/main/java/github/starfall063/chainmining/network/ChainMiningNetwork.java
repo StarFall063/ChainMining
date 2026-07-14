@@ -1,7 +1,6 @@
 package github.starfall063.chainmining.network;
 
 import github.starfall063.chainmining.Tags;
-import github.starfall063.chainmining.server.ChainMiningServerPreview;
 import github.starfall063.chainmining.util.*;
 import io.netty.buffer.ByteBuf;
 import net.minecraft.entity.player.EntityPlayerMP;
@@ -70,69 +69,6 @@ public final class ChainMiningNetwork {
                    ChainMiningStateManager.setPreviewRendered(blocks.size());
                    ChainMiningStateManager.setPreviewHidden(Math.max(0, message.totalCount - blocks.size()));
                 });
-                return null;
-            }
-        }
-    }
-
-    public static class ConfigMessage implements IMessage {
-        int maxBlocks;
-        boolean ignoreHeldItem;
-        String[] toolBlacklist = new String[0];
-        String[] blockBlacklist = new String[0];
-
-        public ConfigMessage() {
-
-        }
-
-        public ConfigMessage(int maxBlocks, boolean ignoreHeldItem, String[] toolBlacklist, String[] blockBlacklist) {
-            this.maxBlocks = maxBlocks;
-            this.ignoreHeldItem = ignoreHeldItem;
-            this.toolBlacklist = toolBlacklist;
-            this.blockBlacklist = blockBlacklist;
-        }
-
-        @Override
-        public void fromBytes(ByteBuf buf) {
-            maxBlocks = buf.readInt();
-            ignoreHeldItem = buf.readBoolean();
-            toolBlacklist = readArray(buf);
-            blockBlacklist = readArray(buf);
-        }
-
-        @Override
-        public void toBytes(ByteBuf buf) {
-            buf.writeInt(maxBlocks);
-            buf.writeBoolean(ignoreHeldItem);
-            writeArray(buf, toolBlacklist);
-            writeArray(buf, blockBlacklist);
-        }
-
-        private static void writeArray(ByteBuf buf, String[] array) {
-            buf.writeInt(array.length);
-            for (String s : array) {
-                ByteBufUtils.writeUTF8String(buf, s);
-            }
-        }
-
-        private static String[] readArray(ByteBuf buf) {
-            int n = buf.readInt();
-            String[] array = new String[n];
-            for (int i = 0; i < n; i++) {
-                array[i] = ByteBufUtils.readUTF8String(buf);
-            }
-            return array;
-        }
-
-        public static class Handler implements IMessageHandler<ConfigMessage, IMessage> {
-            @Override
-            public IMessage onMessage(ConfigMessage message, MessageContext context) {
-                FMLCommonHandler.instance().getWorldThread(context.netHandler).addScheduledTask(() -> ChainMiningStateManager.applySyncedConfig(
-                        message.maxBlocks,
-                        message.ignoreHeldItem,
-                        message.toolBlacklist,
-                        message.blockBlacklist
-                ));
                 return null;
             }
         }

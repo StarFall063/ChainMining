@@ -2,17 +2,14 @@ package github.starfall063.chainmining.util.handler;
 
 import github.starfall063.chainmining.ChainMiningConfig;
 import github.starfall063.chainmining.Tags;
-import github.starfall063.chainmining.server.ChainMiningServerPreview;
 import github.starfall063.chainmining.util.*;
 import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.item.EntityXPOrb;
-import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.item.ItemStack;
-import net.minecraft.util.EnumFacing;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.minecraftforge.event.entity.EntityJoinWorldEvent;
@@ -31,8 +28,7 @@ public class ChainMiningEventHandler {
     @SubscribeEvent
     public static void onBlockBreak(BlockEvent.BreakEvent event) {
         if (event.getWorld().isRemote) return;
-        if (!(event.getPlayer() instanceof EntityPlayerMP)) return;
-        EntityPlayerMP playerMP = (EntityPlayerMP) event.getPlayer();
+        if (!(event.getPlayer() instanceof EntityPlayerMP playerMP)) return;
         UUID uuid = playerMP.getUniqueID();
 
         if (ACTIVE.contains(uuid)) return;
@@ -57,6 +53,7 @@ public class ChainMiningEventHandler {
 
         if (blocks.size() <= 1) return;
 
+        event.setCanceled(true);
         ACTIVE.add(uuid);
         Session s = new Session(pos, new HashSet<>(blocks));
         SESSIONS.put(uuid, s);

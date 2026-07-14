@@ -1,6 +1,6 @@
 # === 链式挖掘 ===
 shape.chainmining.shapeless=无形状挖掘
-shape.chainmining.plane=面向一块挖掘
+shape.chainmining.plane=单向挖掘
 shape.chainmining.tunnel=3x3 隧道挖掘
 match.chainmining.meta_only=仅Meta匹配
 match.chainmining.nbt_only=仅NBT匹配

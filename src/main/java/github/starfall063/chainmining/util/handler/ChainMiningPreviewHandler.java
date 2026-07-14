@@ -30,7 +30,7 @@ public class ChainMiningPreviewHandler {
         List<BlockPos> blocks = ChainMiningStateManager.getPreviewBlocks();
         if (blocks == null || blocks.isEmpty() || !ChainMiningStateManager.isClientEnabled()) return;
 
-        if (!ChainMiningConfig.CLIENT.chainMiningEnablePreview || !ChainMiningStateManager.isClientEnabled()) return;
+        if (!ChainMiningConfig.CLIENT.chainMiningEnablePreview) return;
 
         int limit = Math.min(blocks.size(), ChainMiningConfig.CLIENT.chainMiningPreviewRenderLimit);
         ChainMiningStateManager.setPreviewRendered(limit);
