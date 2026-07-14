@@ -30,21 +30,20 @@ public class ChainMiningHudHandler {
         List<String> target = left ? event.getLeft() : event.getRight();
 
         target.add(ChainMiningLang.tr(matchMode.getTranslationKey()) + " / " + ChainMiningLang.tr(shapeMode.getTranslationKey()));
-
-        if (!ChainMiningConfig.CLIENT.chainMiningEnablePreview) {
-            target.add(ChainMiningLang.tr("overlay.chainmining.disable"));
-        } else {
-            target.add(ChainMiningLang.tr("overlay.chainmining.info",
-                    ChainMiningLang.tr(matchMode.getTranslationKey()),
-                    ChainMiningConfig.CLIENT.chainMiningNeighborRange));
-        }
+        target.add(ChainMiningLang.tr("overlay.chainmining.info",
+                ChainMiningLang.tr(matchMode.getTranslationKey()),
+                ChainMiningConfig.CLIENT.chainMiningNeighborRange));
 
         List<BlockPos> preview = ChainMiningStateManager.getPreviewBlocks();
         if (preview != null && !preview.isEmpty()) {
             int total = preview.size();
-            int rendered = ChainMiningStateManager.getPreviewRendered();
-            int hidden = ChainMiningStateManager.getPreviewHidden();
-            target.add(ChainMiningLang.tr("overlay.chainmining.count", total, rendered, hidden));
+            if (!ChainMiningConfig.CLIENT.chainMiningEnablePreview) {
+                target.add(ChainMiningLang.tr("overlay.chainmining.disabled", total));
+            } else {
+                int rendered = ChainMiningStateManager.getPreviewRendered();
+                int hidden = ChainMiningStateManager.getPreviewHidden();
+                target.add(ChainMiningLang.tr("overlay.chainmining.count", total, rendered, hidden));
+            }
         }
     }
 }
