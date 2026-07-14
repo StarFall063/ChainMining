@@ -42,8 +42,6 @@
 
 ### 前置要求
 
-- **Minecraft版本** 1.12.2
-- **Forge版本** 2847及以上 越新越好
 - **[ConfigAnytime]版本** 越新越好
 
 ### 配置
@@ -140,8 +138,6 @@ A Minecraft 1.12.2 Forge mod that lets you mine entire veins of matching blocks 
 
 ### Requirements
 
-- **Minecraft** 1.12.2
-- **Forge** 2847 or above (the newer the better)
 - **[ConfigAnytime](https://www.curseforge.com/minecraft/mc-mods/configanytime)** (the newer the better)
 
 ### Configuration
