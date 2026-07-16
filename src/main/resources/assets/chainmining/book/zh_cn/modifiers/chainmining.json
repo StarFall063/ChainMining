@@ -1,0 +1,17 @@
+{
+  "modifier": "chainmining",
+  "text": [
+    {
+      "text": "现在你可以连锁破坏方块了！"
+    }
+  ],
+  "effects": [
+    "消耗饥饿值连锁挖掘",
+    "只能强化一次"
+  ],
+  "demoTool": [
+    "tconstruct:pickaxe",
+    "tconstruct:axe",
+    "tconstruct:shovel"
+  ]
+}

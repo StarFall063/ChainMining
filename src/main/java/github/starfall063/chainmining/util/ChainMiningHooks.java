@@ -1,8 +1,11 @@
 package github.starfall063.chainmining.util;
 
 import github.starfall063.chainmining.ChainMiningConfig;
+import github.starfall063.chainmining.compact.TConstructCompact;
+import github.starfall063.chainmining.enchantment.CMEnchantment;
 import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
+import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.item.Item;
@@ -13,6 +16,7 @@ import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.minecraftforge.common.ForgeHooks;
+import net.minecraftforge.fml.common.Loader;
 
 import java.util.*;
 
@@ -26,6 +30,13 @@ public final class ChainMiningHooks {
             if (entry.trim().equalsIgnoreCase(name)) return true;
             if (matchesWildcard(entry.trim(), name)) return true;
         }
+        return false;
+    }
+
+    public static boolean hasChainMiningAbility(ItemStack tool) {
+        if (!ChainMiningConfig.SERVER.chainMiningRequireEnchantment) return true;
+        if (!tool.isEmpty() && EnchantmentHelper.getEnchantmentLevel(CMEnchantment.INSTANCE, tool) > 0) return true;
+        if (Loader.isModLoaded("tconstruct") && TConstructCompact.hasChainMiningModifier(tool)) return true;
         return false;
     }
 

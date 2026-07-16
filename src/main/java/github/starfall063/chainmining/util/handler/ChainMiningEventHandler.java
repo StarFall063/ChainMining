@@ -39,11 +39,14 @@ public class ChainMiningEventHandler {
         IBlockState state = event.getState();
         ItemStack tool = playerMP.getHeldItemMainhand();
 
-        if (ChainMiningHooks.isToolBlacklisted(tool)) return;
-        if (ChainMiningHooks.isBlockBlacklisted(playerMP.world, pos, state)) return;
-        if (!ChainMiningHooks.canChainMineBlock(playerMP.world, pos, state, playerMP, tool)) return;
+        if (!playerMP.capabilities.isCreativeMode) {
+            if (ChainMiningHooks.isToolBlacklisted(tool)) return;
+            if (ChainMiningHooks.isBlockBlacklisted(playerMP.world, pos, state)) return;
+            if (!ChainMiningHooks.canChainMineBlock(playerMP.world, pos, state, playerMP, tool)) return;
+            if (playerMP.getFoodStats().getFoodLevel() < ChainMiningConfig.SERVER.chainMiningMinFoodLevel) return;
+            if (!ChainMiningHooks.hasChainMiningAbility(tool)) return;
+        }
 
-        if (!playerMP.capabilities.isCreativeMode && playerMP.getFoodStats().getFoodLevel() < ChainMiningConfig.SERVER.chainMiningMinFoodLevel) return;
         BlockMatchMode mode = BlockMatchMode.fromName(playerState.matchMode);
         ChainShapeMode shapeMode = ChainShapeMode.fromName(playerState.shape);
         BlockIdentity sourceId = BlockIdentity.from(playerMP.world, pos, state, mode);

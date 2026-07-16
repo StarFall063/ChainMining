@@ -1,0 +1,17 @@
+{
+  "modifier": "chainmining",
+  "text": [
+    {
+      "text": "Now you can chain-destroy blocks!"
+    }
+  ],
+  "effects": [
+    "Chain mining consumes exhaustion",
+    "Single use"
+  ],
+  "demoTool": [
+    "tconstruct:pickaxe",
+    "tconstruct:axe",
+    "tconstruct:shovel"
+  ]
+}

@@ -1,7 +1,7 @@
 package github.starfall063.chainmining.network;
 
 import github.starfall063.chainmining.Tags;
-import github.starfall063.chainmining.util.*;
+import github.starfall063.chainmining.util.ChainMiningStateManager;
 import io.netty.buffer.ByteBuf;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.util.EnumFacing;

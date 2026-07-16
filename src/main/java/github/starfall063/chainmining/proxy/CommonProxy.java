@@ -1,6 +1,7 @@
 package github.starfall063.chainmining.proxy;
 
 import github.starfall063.chainmining.network.ChainMiningNetwork;
+import net.minecraft.item.Item;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
@@ -22,5 +23,8 @@ public class CommonProxy {
 
     public void postInit(FMLPostInitializationEvent event) {
 
+    }
+
+    public void registerModel(Item item, int meta, String id) {
     }
 }

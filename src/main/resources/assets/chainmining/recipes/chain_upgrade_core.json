@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "ABC",
+    "BDB",
+    "CBA"
+  ],
+  "key": {
+    "A": { "item": "tconstruct:materials", "data": 12 },
+    "B": { "item": "tconstruct:ingots", "data": 4 },
+    "C": { "item": "tconstruct:materials", "data": 13 },
+    "D": { "item": "tconstruct:materials", "data": 10 }
+  },
+  "result": {
+    "item": "chainmining:chain_upgrade_core"
+  }
+}
