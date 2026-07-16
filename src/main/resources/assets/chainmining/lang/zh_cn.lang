@@ -2,19 +2,30 @@
 shape.chainmining.shapeless=无形状挖掘
 shape.chainmining.plane=单向挖掘
 shape.chainmining.tunnel=3x3 隧道挖掘
+
 match.chainmining.meta_only=仅Meta匹配
 match.chainmining.nbt_only=仅NBT匹配
 match.chainmining.nbt_meta=NBT+Meta匹配
 match.chainmining.registry_only=仅注册名匹配
+
 overlay.chainmining.disabled=链式挖掘数量: %s | 预览已禁用
 overlay.chainmining.status=链式挖掘已启用 | 模式: %s
 overlay.chainmining.count=链式挖掘数量: %s | 渲染数量: %s | 未渲染数量: %s
 overlay.chainmining.info=§e匹配模式: §f%s  §e范围: §f%s
+
 message.chainmining.enabled=链式挖掘已开启
 message.chainmining.disabled=链式挖掘已关闭
 message.chainmining.shape=连锁形状: %s
 message.chainmining.match_mode=匹配模式: %s
 message.chainmining.range=相邻范围: %s
 message.chainmining.neighbor_range=相邻搜索范围: %s
+
 key.chainmining.enable=按住启用链式挖掘
 key.categories.chainmining=链式挖掘
+
+enchantment.chainmining=链式挖掘
+
+item.chainmining.chain_upgrade_core.name=连锁升级核心
+
+modifier.chainmining.name=连锁！
+modifier.chainmining.desc=§o十分甚至九分的不错！§r\n现在你可以连锁破坏方块了！

@@ -1,13 +1,9 @@
 package github.starfall063.chainmining;
 
 import com.cleanroommc.configanytime.ConfigAnytime;
-import github.starfall063.chainmining.network.ChainMiningNetwork;
-import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.server.MinecraftServer;
 import net.minecraftforge.common.config.Config;
 import net.minecraftforge.common.config.ConfigManager;
 import net.minecraftforge.fml.client.event.ConfigChangedEvent;
-import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
@@ -54,6 +50,11 @@ public class ChainMiningConfig {
     }
 
     public static class Server {
+        @Config.Name("ChainMiningRequireEnchantment")
+        @Config.Comment({"After enabling, you need Chain Enchant or upgrade to use Chain (game restart required).", "启用后需要连锁附魔或升级才能使用连锁 (需要重启游戏)"})
+        @Config.RequiresMcRestart
+        public boolean chainMiningRequireEnchantment = false;
+
         @Config.Name("ChainMiningMaxBlocks")
         @Config.Comment({"Maximum number of chain mining at once.", "单次连锁的最大数量"})
         @Config.RangeInt(min = 1, max = 1024)

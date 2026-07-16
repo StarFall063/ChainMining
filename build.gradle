@@ -149,6 +149,10 @@ dependencies {
         testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
     }
     implementation(rfg.deobf("curse.maven:configanytime-870276:5212709"))
+    implementation(rfg.deobf("curse.maven:tinkersantique-1242239:8089154"))
+    implementation(rfg.deobf("curse.maven:mantle-74924:2713386"))
+    implementation(rfg.deobf("mezz.jei:jei_1.12.2:4.16.1.1013"))
+
 }
 
 apply from: 'gradle/scripts/dependencies.gradle'
