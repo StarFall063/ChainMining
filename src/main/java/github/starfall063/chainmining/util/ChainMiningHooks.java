@@ -35,6 +35,7 @@ public final class ChainMiningHooks {
 
     public static boolean hasChainMiningAbility(ItemStack tool) {
         if (!ChainMiningConfig.SERVER.chainMiningRequireEnchantment) return true;
+        if (ChainMiningConfig.SERVER.chainMiningIgnoreHeldItem) return true;
         if (!tool.isEmpty() && EnchantmentHelper.getEnchantmentLevel(CMEnchantment.INSTANCE, tool) > 0) return true;
         if (Loader.isModLoaded("tconstruct") && TConstructCompact.hasChainMiningModifier(tool)) return true;
         return false;
