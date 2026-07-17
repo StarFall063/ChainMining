@@ -27,7 +27,16 @@ public final class ChainMiningServerPreview {
         World world = player.world;
         BlockPos origin = BlockPos.fromLong(state.originPos);
         IBlockState sState = world.getBlockState(origin);
-        if (sState.getBlock().isAir(sState, world, origin) || ChainMiningHooks.isToolBlacklisted(player.getHeldItemMainhand()) || ChainMiningHooks.isBlockBlacklisted(world, origin, sState) || !ChainMiningHooks.canChainMineBlock(world, origin, sState, player, player.getHeldItemMainhand()) || !ChainMiningHooks.hasChainMiningAbility(player.getHeldItemMainhand())) {
+        if (!player.capabilities.isCreativeMode) {
+            if (ChainMiningHooks.isToolBlacklisted(player.getHeldItemMainhand())
+                    || ChainMiningHooks.isBlockBlacklisted(world, origin, sState)
+                    || !ChainMiningHooks.canChainMineBlock(world, origin, sState, player, player.getHeldItemMainhand())
+                    || !ChainMiningHooks.hasChainMiningAbility(player.getHeldItemMainhand())) {
+                send(player, 0, new long[0]);
+                return;
+            }
+        }
+        if (sState.getBlock().isAir(sState, world, origin)) {
             send(player, 0, new long[0]);
             return;
         }
