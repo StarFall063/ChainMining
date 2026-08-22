@@ -27,9 +27,10 @@
 - **可调搜索范围** — 按住热键同时按住shift + Alt用滚轮调整相邻搜索范围（1-5）
 - **掉落物聚合** — 所有掉落物和经验球在原始方块位置生成，减少实体卡顿
 - **工具与方块黑名单** — 支持通配符，精确控制连锁行为
+- **等价方块组** — 服务端可将不同注册名视为同一种方块，支持 `*` 通配符 示例 "minecraft:tallgrass,minecraft:yellow_flower", "minecraft:red_flower:*,minecraft:double_plant"
+- **蹲下催熟** — 蹲下时触发一次范围催熟
+- **未加载区块保护** — 预览、扫描和执行都会跳过未加载区块，不会强制加载远处区块
 - **HUD 信息面板** — 显示当前模式、形态、范围及预览统计
-- **彩虹预览模式** — 线框颜色循环变化
-- **中英双语** — 完整的中文和英文语言支持
 - **ConfigAnytime 支持** — 所有设置均可在游戏内实时修改，无需重启
 
 ### 使用方法
@@ -38,6 +39,7 @@
 2. 看向目标方块，线框预览会显示将被连锁的方块
 3. 挖掘方块，所有高亮的方块将被一并采集
 4. 松开按键恢复普通挖掘
+5. 蹲下时触发一次范围催熟
 
 ### 前置要求
 
@@ -71,6 +73,11 @@
 | `chainMiningToolBlackList` | `{}` | 工具黑名单（支持通配符） |
 | `chainMiningBlockBlackList` | `{}` | 方块黑名单（支持通配符） |
 | `chainMiningNbtMatchKeys` | `[id, tier, type]` | NBT 匹配时比较的键名列表 |
+| `chainMiningEquivalentBlockGroups` | `minecraft:tallgrass:*,minecraft:yellow_flower:*,minecraft:red_flower:*,minecraft:double_plant:*` | 等价方块组；每项用逗号分隔，支持 `*`，`:*` 后缀忽略 metadata |
+| `chainMiningSneakGrowEnabled` | `true` | 是否启用蹲下催熟 |
+| `chainMiningSneakGrowWhitelist` | `{}` | 催熟白名单；非空时仅催熟匹配方块，支持通配符 |
+| `chainMiningSneakGrowBlacklist` | `minecraft:grass,minecraft:tallgrass` | 催熟黑名单，优先于白名单，支持通配符 |
+| `chainMiningSneakGrowRadius` | `3` | 蹲下催熟的立方体半径（1-16） |
 
 #### 黑名单示例
 
@@ -83,7 +90,13 @@ chainMiningBlockBlackList <
     minecraft:obsidian
     minecraft:chest
 >
+
+chainMiningEquivalentBlockGroups <
+    minecraft:tallgrass:*,minecraft:yellow_flower:*,minecraft:red_flower:*,minecraft:double_plant:*
+>
 ```
+
+未加载区块不会加入连锁列表，也不会消耗 `chainMiningMaxBlocks`。无形扫描会继续检查其他已加载位置；平面和隧道扫描按连续空缺规则停止。实际执行时会再次检查区块状态。
 
 ### 从源码构建
 
@@ -124,9 +137,11 @@ A Minecraft 1.12.2 Forge mod that lets you mine entire veins of matching blocks 
 - **Adjustable range** — Shift + Alt + mouse wheel while holding the key (1-5)
 - **Aggregated drops** — all drops and XP spawn at the origin block to reduce entity lag
 - **Tool & block blacklists** — wildcard support for fine-grained control
+- **Equivalent block groups** — server-side groups can treat different registry IDs as one block type; wildcards are supported. Examples: `minecraft:tallgrass,minecraft:yellow_flower` and `minecraft:red_flower:*,minecraft:double_plant:*`
+- **Sneak growth** — start sneaking to trigger one growth pass in the configured radius
+- **Unloaded-chunk protection** — preview, scanning, and execution skip unloaded chunks instead of force-loading them
 - **HUD overlay** — shows current mode, shape, range, and preview stats
-- **Rainbow preview mode** — cycling color wireframe
-- **Bilingual** — English and Chinese (zh_cn) localization
+- **ConfigAnytime support** — settings can be changed in-game without restarting
 
 ### How to Use
 
@@ -134,6 +149,7 @@ A Minecraft 1.12.2 Forge mod that lets you mine entire veins of matching blocks 
 2. Look at a block — the wireframe preview shows what will be mined
 3. Break the block — all highlighted blocks are harvested
 4. Release the key to return to normal mining
+5. Start sneaking to trigger one growth pass
 
 ### Requirements
 
@@ -167,6 +183,11 @@ All settings are in `config/chainmining.cfg` and can be changed in-game via Mod 
 | `chainMiningToolBlackList` | `{}` | Blacklisted tools (wildcards supported) |
 | `chainMiningBlockBlackList` | `{}` | Blacklisted blocks (wildcards supported) |
 | `chainMiningNbtMatchKeys` | `[id, tier, type]` | NBT keys to compare for NBT matching |
+| `chainMiningEquivalentBlockGroups` | `minecraft:tallgrass:*,minecraft:yellow_flower:*,minecraft:red_flower:*,minecraft:double_plant:*` | Server-side equivalent groups; comma-separated entries and wildcard support |
+| `chainMiningSneakGrowEnabled` | `true` | Enable sneak-triggered growth |
+| `chainMiningSneakGrowWhitelist` | `{}` | Growth whitelist; when non-empty only matching blocks grow, wildcards supported |
+| `chainMiningSneakGrowBlacklist` | `minecraft:grass,minecraft:tallgrass` | Growth blacklist; takes priority over the whitelist, wildcards supported |
+| `chainMiningSneakGrowRadius` | `3` | Cubic radius for sneak growth (1-16) |
 
 #### Blacklist Examples
 
@@ -179,7 +200,13 @@ chainMiningBlockBlackList <
     minecraft:obsidian
     minecraft:chest
 >
+
+chainMiningEquivalentBlockGroups <
+    minecraft:tallgrass:*,minecraft:yellow_flower:*,minecraft:red_flower:*,minecraft:double_plant:*
+>
 ```
+
+Unloaded chunks are skipped, do not consume `chainMiningMaxBlocks`, and are never force-loaded by preview or execution. Shapeless scanning continues through other loaded candidates; plane and tunnel scanning stop according to consecutive gaps. Execution checks chunk state again in case a chunk unloads after preview.
 
 ### Credits
 
