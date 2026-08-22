@@ -21,6 +21,15 @@ import net.minecraftforge.fml.common.Loader;
 import java.util.*;
 
 public final class ChainMiningHooks {
+    private static final Map<Integer, List<BlockPos>> NEIGHBOR_OFFSETS = new HashMap<>();
+
+    static {
+        // The configured radius is capped at five, so this cache remains very small.
+        for (int range = 1; range <= 5; range++) {
+            NEIGHBOR_OFFSETS.put(range, buildNeighborOffsets(range));
+        }
+    }
+
     public static boolean isToolBlacklisted(ItemStack tool) {
         if (tool.isEmpty()) return false;
         ResourceLocation id = tool.getItem().getRegistryName();
@@ -57,7 +66,8 @@ public final class ChainMiningHooks {
     }
 
     public static boolean canChainMineBlock(World world, BlockPos pos, IBlockState state, EntityPlayer player, ItemStack held) {
-        if (world == null || pos == null || state == null || state.getBlock().isAir(state, world, pos)) return false;
+        if (world == null || pos == null || state == null || !world.isBlockLoaded(pos)
+                || state.getBlock().isAir(state, world, pos)) return false;
 
         if (player != null && player.capabilities.isCreativeMode) return true;
 
@@ -69,6 +79,9 @@ public final class ChainMiningHooks {
     }
 
     public static List<BlockPos> scanBlocks(World world, BlockPos startPos, IBlockState startState, BlockIdentity sourceId, BlockMatchMode matchMode, int maxBlocks, int neighborRange, EntityPlayer player, ChainShapeMode shapeMode, EnumFacing hitFace) {
+        if (world == null || startPos == null || !world.isBlockLoaded(startPos)) {
+            return Collections.emptyList();
+        }
         if (hitFace == null && player != null) {
             hitFace = player.getHorizontalFacing();
         }
@@ -104,6 +117,11 @@ public final class ChainMiningHooks {
         int gap = 0;
         for (int depth = 1; result.size() < maxBlocks; depth++) {
             BlockPos next = origin.offset(dir, depth);
+            if (!world.isBlockLoaded(next)) {
+                gap++;
+                if (gap > neighborRange) break;
+                continue;
+            }
             IBlockState state = world.getBlockState(next);
 
             if (state.getBlock().isAir(state, world, next)
@@ -159,6 +177,8 @@ public final class ChainMiningHooks {
 
                     if (!added.add(candidate)) continue;
 
+                    if (!world.isBlockLoaded(candidate)) continue;
+
                     IBlockState state = world.getBlockState(candidate);
 
                     if (state.getBlock().isAir(state, world, candidate)
@@ -196,9 +216,11 @@ public final class ChainMiningHooks {
 
         while (!queue.isEmpty() && result.size() < maxBlocks) {
             BlockPos current = queue.poll();
-            for (BlockPos next : getNeighbors(current, neighborRange)) {
+            for (BlockPos offset : getNeighborOffsets(neighborRange)) {
+                BlockPos next = current.add(offset.getX(), offset.getY(), offset.getZ());
                 if (visited.contains(next)) continue;
                 visited.add(next);
+                if (!world.isBlockLoaded(next)) continue;
                 IBlockState nextState = world.getBlockState(next);
                 if (nextState.getBlock().isAir(nextState, world, next)) continue;
                 if (isBlockBlacklisted(world, next, nextState)) continue;
@@ -213,23 +235,37 @@ public final class ChainMiningHooks {
         return result;
     }
 
-    private static List<BlockPos> getNeighbors(BlockPos pos, int range) {
-        List<BlockPos> neighbors = new ArrayList<>();
+    /**
+     * Returns immutable offsets sorted by distance from the origin. Offsets are
+     * independent of world state, so reusing them cannot make a preview stale.
+     */
+    static List<BlockPos> getNeighborOffsets(int range) {
+        if (range <= 0) return Collections.emptyList();
+        List<BlockPos> offsets = NEIGHBOR_OFFSETS.get(range);
+        if (offsets != null) return offsets;
+
+        // Keep the cache bounded if a caller supplies a range outside config.
+        return buildNeighborOffsets(range);
+    }
+
+    private static List<BlockPos> buildNeighborOffsets(int range) {
+        List<BlockPos> offsets = new ArrayList<>();
         for (int x = -range; x <= range; x++) {
             for (int y = -range; y <= range; y++) {
                 for (int z = -range; z <= range; z++) {
                     if (x == 0 && y == 0 && z == 0) continue;
-                    neighbors.add(pos.add(x, y, z));
+                    offsets.add(new BlockPos(x, y, z));
                 }
             }
         }
-        neighbors.sort(Comparator.comparingDouble(p -> p.distanceSq(pos)));
-        return neighbors;
+        offsets.sort(Comparator.comparingDouble(p -> p.distanceSq(BlockPos.ORIGIN)));
+        return Collections.unmodifiableList(offsets);
     }
 
     public static void executeChainMining(EntityPlayerMP player, List<BlockPos> blocks, ItemStack tool) {
         World world = player.world;
         for (BlockPos pos : blocks) {
+            if (!world.isBlockLoaded(pos)) continue;
             IBlockState state = world.getBlockState(pos);
             if (state.getBlock().isAir(state, world, pos)) continue;
 

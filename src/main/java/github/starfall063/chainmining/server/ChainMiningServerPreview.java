@@ -26,6 +26,10 @@ public final class ChainMiningServerPreview {
 
         World world = player.world;
         BlockPos origin = BlockPos.fromLong(state.originPos);
+        if (!world.isBlockLoaded(origin)) {
+            send(player, 0, new long[0]);
+            return;
+        }
         IBlockState sState = world.getBlockState(origin);
         if (!player.capabilities.isCreativeMode) {
             if (ChainMiningHooks.isToolBlacklisted(player.getHeldItemMainhand())
