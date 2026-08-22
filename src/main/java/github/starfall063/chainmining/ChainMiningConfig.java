@@ -44,8 +44,7 @@ public class ChainMiningConfig {
         public int chainMiningNeighborRange = 1;
 
         @Config.Name("ChainMiningEnablePreview")
-        @Config.Comment({"Render chain mining preview outline.",
-                "是否渲染连锁预览边框"})
+        @Config.Comment({"Render chain mining preview outline.", "是否渲染连锁预览边框"})
         public boolean chainMiningEnablePreview = true;
     }
 
@@ -94,6 +93,37 @@ public class ChainMiningConfig {
                 "tier",
                 "type"
         };
+
+        @Config.Name("ChainMiningEquivalentBlockGroups")
+        @Config.Comment({"Equivalent block groups. '*' matches registry IDs; a ':*' suffix also ignores metadata.",
+                "等价方块组：每项使用逗号分隔的方块注册名，组内视为同一种方块"})
+        public String[] chainMiningEquivalentBlockGroups = {
+                "minecraft:tallgrass:*,minecraft:yellow_flower:*,minecraft:red_flower:*,minecraft:double_plant:*"
+        };
+
+        @Config.Name("ChainMiningSneakGrowEnabled")
+        @Config.Comment({"Grow eligible blocks once when the player starts sneaking.",
+                "启用蹲下催熟"})
+        public boolean chainMiningSneakGrowEnabled = true;
+
+        @Config.Name("ChainMiningSneakGrowWhitelist")
+        @Config.Comment({"Blocks eligible for sneak growth when non-empty; supports wildcards.",
+                "蹲下催熟白名单，非空时仅催熟列表中的方块，支持通配符"})
+        public String[] chainMiningSneakGrowWhitelist = {};
+
+        @Config.Name("ChainMiningSneakGrowBlacklist")
+        @Config.Comment({"Blocks excluded from sneak growth; supports wildcards.",
+                "蹲下催熟黑名单，始终优先排除，支持通配符"})
+        public String[] chainMiningSneakGrowBlacklist = {
+                "minecraft:grass",
+                "minecraft:tallgrass"
+        };
+
+        @Config.Name("ChainMiningSneakGrowRadius")
+        @Config.Comment({"Inclusive cubic radius for sneak growth.", "蹲下催熟的立方体半径"})
+        @Config.RangeInt(min = 1, max = 16)
+        public int chainMiningSneakGrowRadius = 3;
+
     }
 
     static {
