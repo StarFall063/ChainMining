@@ -27,7 +27,7 @@
 - **可调搜索范围** — 按住热键同时按住shift + Alt用滚轮调整相邻搜索范围（1-5）
 - **掉落物聚合** — 所有掉落物和经验球在原始方块位置生成，减少实体卡顿
 - **工具与方块黑名单** — 支持通配符，精确控制连锁行为
-- **等价方块组** — 服务端可将不同注册名视为同一种方块，支持 `*` 通配符 示例 "minecraft:tallgrass,minecraft:yellow_flower", "minecraft:red_flower:*,minecraft:double_plant"
+- **等价方块组** — 服务端可将不同注册名视为同一种方块，支持 `*` 通配符
 - **蹲下催熟** — 蹲下时触发一次范围催熟
 - **未加载区块保护** — 预览、扫描和执行都会跳过未加载区块，不会强制加载远处区块
 - **HUD 信息面板** — 显示当前模式、形态、范围及预览统计
@@ -137,7 +137,7 @@ A Minecraft 1.12.2 Forge mod that lets you mine entire veins of matching blocks 
 - **Adjustable range** — Shift + Alt + mouse wheel while holding the key (1-5)
 - **Aggregated drops** — all drops and XP spawn at the origin block to reduce entity lag
 - **Tool & block blacklists** — wildcard support for fine-grained control
-- **Equivalent block groups** — server-side groups can treat different registry IDs as one block type; wildcards are supported. Examples: `minecraft:tallgrass,minecraft:yellow_flower` and `minecraft:red_flower:*,minecraft:double_plant:*`
+- **Equivalent block groups** — server-side groups can treat different registry IDs as one block type; wildcards are supported.
 - **Sneak growth** — start sneaking to trigger one growth pass in the configured radius
 - **Unloaded-chunk protection** — preview, scanning, and execution skip unloaded chunks instead of force-loading them
 - **HUD overlay** — shows current mode, shape, range, and preview stats
