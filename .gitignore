@@ -20,6 +20,9 @@ build/
 # Tests
 test/
 
+# docs
+docs/
+
 # Minecraft runtime
 run/
 logs/
