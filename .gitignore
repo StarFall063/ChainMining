@@ -17,6 +17,9 @@ out/
 build/
 .gradle/
 
+# Tests
+test/
+
 # Minecraft runtime
 run/
 logs/
