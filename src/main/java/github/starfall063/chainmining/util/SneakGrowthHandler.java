@@ -15,7 +15,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-/** Server-side growth pass for players who are sneaking. */
 public final class SneakGrowthHandler {
     private static final Map<UUID, Boolean> PREVIOUS_SNEAKING = new ConcurrentHashMap<>();
 
@@ -84,7 +83,7 @@ public final class SneakGrowthHandler {
                     if (!currentGrowable.canGrow(player.world, pos, currentState, false)) continue;
 
                     currentGrowable.grow(player.world, player.world.rand, pos, currentState);
-                    // Match vanilla bone meal feedback after the growth attempt.
+
                     player.world.playEvent(2005, pos, 0);
                 }
             }

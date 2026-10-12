@@ -10,6 +10,7 @@ import net.minecraft.inventory.Slot;
 import net.minecraft.item.ItemStack;
 import net.minecraftforge.client.event.GuiScreenEvent;
 import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.common.Loader;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.relauncher.Side;
 import org.lwjgl.input.Mouse;
@@ -22,6 +23,7 @@ public final class ChainStorageCoreGuiHandler {
 
     @SubscribeEvent
     public static void onMouseInput(GuiScreenEvent.MouseInputEvent.Pre event) {
+        if (!Loader.isModLoaded("appliedenergistics2")) return;
         if (!(event.getGui() instanceof GuiContainer) || Mouse.getEventButton() != 1 || !Mouse.getEventButtonState()) return;
         if (Keyboard.isKeyDown(Keyboard.KEY_LSHIFT) || Keyboard.isKeyDown(Keyboard.KEY_RSHIFT)) return;
         GuiContainer gui = (GuiContainer) event.getGui();
@@ -33,8 +35,6 @@ public final class ChainStorageCoreGuiHandler {
         if (gui instanceof GuiContainerCreative) {
             Minecraft mc = Minecraft.getMinecraft();
             if (slot.inventory != mc.player.inventory) {
-                // Creative catalog slots are client-side display stacks. There is no
-                // server inventory slot to toggle until the item is taken from the tab.
                 ItemStack updated = stack.copy();
                 ItemChainStorageTerminal.setEnabled(updated, !ItemChainStorageTerminal.isEnabled(updated));
                 slot.putStack(updated);

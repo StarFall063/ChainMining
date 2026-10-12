@@ -16,11 +16,8 @@ import net.minecraft.util.EnumHand;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.text.translation.I18n;
 import net.minecraft.world.World;
-import net.minecraftforge.event.RegistryEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.common.Optional;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.Loader;
+import net.minecraftforge.fml.common.Optional;
 import baubles.api.BaublesApi;
 import baubles.api.BaubleType;
 import baubles.api.IBauble;
@@ -30,8 +27,6 @@ import net.minecraftforge.items.IItemHandlerModifiable;
 import javax.annotation.Nullable;
 import java.util.List;
 
-@Mod.EventBusSubscriber(modid = Tags.MOD_ID)
-@Optional.Interface(iface = "appeng.api.features.INetworkEncodable", modid = "appliedenergistics2")
 @Optional.Interface(iface = "baubles.api.IBauble", modid = "baubles")
 public final class ItemChainStorageTerminal extends Item implements IHasModel, INetworkEncodable, IBauble {
     public static final ItemChainStorageTerminal INSTANCE = new ItemChainStorageTerminal();
@@ -43,11 +38,6 @@ public final class ItemChainStorageTerminal extends Item implements IHasModel, I
         this.setTranslationKey(Tags.MOD_ID + ".chain_storage_terminal");
         this.setCreativeTab(CreativeTabs.MISC);
         this.setMaxStackSize(1);
-    }
-
-    @SubscribeEvent
-    public static void registerItem(RegistryEvent.Register<Item> event) {
-        event.getRegistry().register(INSTANCE);
     }
 
     public static boolean isEnabled(ItemStack stack) {
@@ -160,13 +150,11 @@ public final class ItemChainStorageTerminal extends Item implements IHasModel, I
     }
 
     @Override
-    @Optional.Method(modid = "appliedenergistics2")
     public String getEncryptionKey(ItemStack stack) {
         return getSecurityKey(stack);
     }
 
     @Override
-    @Optional.Method(modid = "appliedenergistics2")
     public void setEncryptionKey(ItemStack stack, String encryptionKey, String name) {
         setSecurityKey(stack, encryptionKey);
     }

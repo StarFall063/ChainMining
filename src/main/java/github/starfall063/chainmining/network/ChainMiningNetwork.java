@@ -11,6 +11,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.math.BlockPos;
 import net.minecraftforge.fml.common.FMLCommonHandler;
+import net.minecraftforge.fml.common.Loader;
 import net.minecraftforge.fml.common.network.ByteBufUtils;
 import net.minecraftforge.fml.common.network.NetworkRegistry;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
@@ -55,6 +56,7 @@ public final class ChainMiningNetwork {
         public static class Handler implements IMessageHandler<ToggleStorageCoreMessage, IMessage> {
             @Override
             public IMessage onMessage(ToggleStorageCoreMessage message, MessageContext context) {
+                if (!Loader.isModLoaded("appliedenergistics2")) return null;
                 EntityPlayerMP player = context.getServerHandler().player;
                 player.getServerWorld().addScheduledTask(() -> {
                     if (player.openContainer == null || player.openContainer.windowId != message.windowId

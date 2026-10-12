@@ -3,7 +3,6 @@ package github.starfall063.chainmining.util;
 import java.util.regex.Pattern;
 import java.util.Locale;
 
-/** Independent block filters for sneak growth. */
 public final class SneakGrowthFilter {
     private SneakGrowthFilter() {
     }
