@@ -84,5 +84,7 @@ public final class ChainMiningStateManager {
         public boolean hasTarget;
         public long originPos;
         public boolean dirty;
+        public int previewRenderLimit = 128;
+        public final PreviewSyncState previewSync = new PreviewSyncState();
     }
 }

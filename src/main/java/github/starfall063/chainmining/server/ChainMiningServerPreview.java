@@ -9,6 +9,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
 import java.util.List;
+import java.util.Collections;
 import java.util.UUID;
 
 public final class ChainMiningServerPreview {
@@ -20,14 +21,14 @@ public final class ChainMiningServerPreview {
         UUID uuid = player.getUniqueID();
         ChainMiningStateManager.PlayerState state = ChainMiningStateManager.getServerState(uuid);
         if (!state.enabled || !state.hasTarget) {
-            send(player, 0, new long[0]);
+            send(player, state, Collections.emptyList());
             return;
         }
 
         World world = player.world;
         BlockPos origin = BlockPos.fromLong(state.originPos);
         if (!world.isBlockLoaded(origin)) {
-            send(player, 0, new long[0]);
+            send(player, state, Collections.emptyList());
             return;
         }
         IBlockState sState = world.getBlockState(origin);
@@ -36,12 +37,12 @@ public final class ChainMiningServerPreview {
                     || ChainMiningHooks.isBlockBlacklisted(world, origin, sState)
                     || !ChainMiningHooks.canChainMineBlock(world, origin, sState, player, player.getHeldItemMainhand())
                     || !ChainMiningHooks.hasChainMiningAbility(player.getHeldItemMainhand())) {
-                send(player, 0, new long[0]);
+                send(player, state, Collections.emptyList());
                 return;
             }
         }
         if (sState.getBlock().isAir(sState, world, origin)) {
-            send(player, 0, new long[0]);
+            send(player, state, Collections.emptyList());
             return;
         }
 
@@ -49,19 +50,18 @@ public final class ChainMiningServerPreview {
         ChainShapeMode shape = ChainShapeMode.fromName(state.shape);
         BlockIdentity id = BlockIdentity.from(world, origin, sState, mode);
         if (id == null) {
-            send(player, 0, new long[0]);
+            send(player, state, Collections.emptyList());
             return;
         }
 
         List<BlockPos> blockPos = ChainMiningHooks.scanBlocks(world, origin, sState, id, mode, ChainMiningConfig.effectiveMaxBlocks(), Math.min(state.neighborRange, ChainMiningConfig.effectiveNeighborRange()), player, shape, state.hitFace);
-        int total = blockPos.size();
-        long[] array = new long[total];
-        for (int i = 0; i < total; i++) array[i] = blockPos.get(i).toLong();
-        send(player, total, array);
+        send(player, state, blockPos);
     }
 
-    private static void send(EntityPlayerMP player, int total, long[] pos) {
+    private static void send(EntityPlayerMP player, ChainMiningStateManager.PlayerState state, List<BlockPos> blocks) {
+        int rangeLimit = ChainMiningConfig.effectiveNeighborRange();
+        if (!state.previewSync.update(blocks, rangeLimit, state.previewRenderLimit)) return;
         ChainMiningNetwork.CHANNEL.sendTo(new ChainMiningNetwork.PreviewMessage(
-                total, pos, ChainMiningConfig.effectiveNeighborRange()), player);
+                state.previewSync.getTotal(), state.previewSync.getPositions(), rangeLimit), player);
     }
 }

@@ -39,7 +39,7 @@ public class ChainMiningPreviewHandler {
 
         int limit = Math.min(blocks.size(), ChainMiningConfig.effectivePreviewRenderLimit());
         ChainMiningStateManager.setPreviewRendered(limit);
-        ChainMiningStateManager.setPreviewHidden(Math.max(0, blocks.size() - limit));
+        ChainMiningStateManager.setPreviewHidden(Math.max(0, ChainMiningStateManager.getPreviewTotal() - limit));
         List<BlockPos> visibleBlocks = new ArrayList<>(blocks.subList(0, limit));
         List<LineSegment> lines = OUTLINE_CACHE.getOrBuild(visibleBlocks);
         if (lines.isEmpty()) return;

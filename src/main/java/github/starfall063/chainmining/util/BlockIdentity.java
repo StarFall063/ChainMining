@@ -12,8 +12,8 @@ import net.minecraft.world.World;
 import java.util.*;
 
 public final class BlockIdentity {
-    private static final Set<String> KEY_WHITELIST = new HashSet<>();
     private static volatile String[] lastNbtKeys = null;
+    private static volatile NbtWhitelist nbtWhitelist = NbtWhitelist.from(null);
     private static volatile String[] lastEquivalentGroups = null;
     private static volatile Map<String, String> equivalentBlockIds = Collections.emptyMap();
     private static volatile Set<String> equivalentMetaWildcards = Collections.emptySet();
@@ -31,13 +31,7 @@ public final class BlockIdentity {
         String[] keys = ChainMiningConfig.SERVER.chainMiningNbtMatchKeys;
         if (keys == lastNbtKeys) return;
         lastNbtKeys = keys;
-        KEY_WHITELIST.clear();
-        for (String key : keys) {
-            String trimmed = key.trim();
-            if (!trimmed.isEmpty()) {
-                KEY_WHITELIST.add(trimmed);
-            }
-        }
+        nbtWhitelist = NbtWhitelist.from(keys);
     }
 
     private static NBTTagCompound getBlockNbt(World world, BlockPos pos) {
@@ -46,35 +40,6 @@ public final class BlockIdentity {
         NBTTagCompound nbt = new NBTTagCompound();
         te.writeToNBT(nbt);
         return nbt;
-    }
-
-    private static NBTTagCompound extractWhitelistNbt(NBTTagCompound nbt) {
-        if (nbt == null || nbt.isEmpty()) return null;
-        NBTTagCompound result = new NBTTagCompound();
-        for (String key : KEY_WHITELIST) {
-            String[] parts = key.split("\\.");
-            copyByPath(nbt, result, parts);
-        }
-        return result.isEmpty() ? null : result;
-    }
-
-    private static void copyByPath(NBTTagCompound source, NBTTagCompound result, String[] path) {
-        copyByPath(source, result, path, 0);
-    }
-
-    private static void copyByPath(NBTTagCompound source, NBTTagCompound result, String[] path, int index) {
-        String key = path[index];
-        if (!source.hasKey(key)) return;
-
-        boolean isLast = (index == path.length - 1);
-        if (isLast) {
-            result.setTag(key, source.getTag(key).copy());
-        } else {
-            NBTTagCompound subSource = source.getCompoundTag(key);
-            NBTTagCompound subResult = new NBTTagCompound();
-            result.setTag(key, subResult);
-            copyByPath(subSource, subResult, path, index + 1);
-        }
     }
 
     public static BlockIdentity from(World world, BlockPos pos, IBlockState state, BlockMatchMode matchMode) {
@@ -90,8 +55,7 @@ public final class BlockIdentity {
         NBTTagCompound nbt = null;
         if (matchMode.shouldMatchNbt()) {
             refreshWhitelist();
-            NBTTagCompound rawNbt = getBlockNbt(world, pos);
-            nbt = extractWhitelistNbt(rawNbt);
+            if (!nbtWhitelist.isEmpty()) nbt = nbtWhitelist.extract(getBlockNbt(world, pos));
         }
 
         return new BlockIdentity(blockId, meta, nbt);
@@ -210,8 +174,8 @@ public final class BlockIdentity {
         if (matchMode.shouldMatchMeta() && this.meta >= 0 && !hasEquivalentMetaWildcard(rawBlockId) && this.meta != state.getBlock().getMetaFromState(state))
             return false;
         if (matchMode.shouldMatchNbt()) {
-            NBTTagCompound rawNbt = getBlockNbt(world, pos);
-            NBTTagCompound otherNbt = extractWhitelistNbt(rawNbt);
+            if (nbtWhitelist.isEmpty()) return this.nbt == null;
+            NBTTagCompound otherNbt = nbtWhitelist.extract(getBlockNbt(world, pos));
             if (!Objects.equals(this.nbt, otherNbt)) return false;
         }
         return true;

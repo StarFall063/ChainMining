@@ -21,13 +21,7 @@ import net.minecraftforge.fml.common.Loader;
 import java.util.*;
 
 public final class ChainMiningHooks {
-    private static final Map<Integer, List<BlockPos>> NEIGHBOR_OFFSETS = new HashMap<>();
-
-    static {
-        for (int range = 1; range <= 5; range++) {
-            NEIGHBOR_OFFSETS.put(range, buildNeighborOffsets(range));
-        }
-    }
+    private static final List<BlockPos> ADJACENT_OFFSETS = buildNeighborOffsets(1);
 
     public static boolean isToolBlacklisted(ItemStack tool) {
         if (ChainMiningConfig.SERVER.chainMiningIgnoreHeldItem) return false;
@@ -210,42 +204,34 @@ public final class ChainMiningHooks {
             int neighborRange,
             EntityPlayer player,
             ItemStack tool) {
-        Set<BlockPos> visited = new HashSet<>();
+        // Radius 1 is only 26 offsets; avoid interval bookkeeping on that common path.
+        ShapelessScanFrontier frontier = neighborRange > 1 ? new ShapelessScanFrontier(startPos, neighborRange) : null;
+        Set<BlockPos> visited = frontier == null ? new HashSet<>() : null;
         Queue<BlockPos> queue = new ArrayDeque<>();
         List<BlockPos> result = new ArrayList<>();
-        visited.add(startPos);
+        if (visited != null) visited.add(startPos);
         queue.add(startPos);
         result.add(startPos);
 
         while (!queue.isEmpty() && result.size() < maxBlocks) {
             BlockPos current = queue.poll();
-            for (BlockPos offset : getNeighborOffsets(neighborRange)) {
-                BlockPos next = current.add(offset.getX(), offset.getY(), offset.getZ());
-                if (visited.contains(next)) continue;
-                visited.add(next);
+            List<BlockPos> candidates = frontier == null ? ADJACENT_OFFSETS : frontier.expand(current);
+            for (BlockPos candidate : candidates) {
+                BlockPos next = frontier == null ? current.add(candidate.getX(), candidate.getY(), candidate.getZ()) : candidate;
+                if (visited != null && !visited.add(next)) continue;
                 if (!world.isBlockLoaded(next)) continue;
                 IBlockState nextState = world.getBlockState(next);
                 if (nextState.getBlock().isAir(nextState, world, next)) continue;
                 if (!isCreative(player) && isBlockBlacklisted(world, next, nextState)) continue;
                 if (!canChainMineBlock(world, next, nextState, player, tool)) continue;
                 if (!sourceId.matches(world, next, nextState, matchMode)) continue;
-                if (result.size() >= maxBlocks) break;
                 queue.add(next);
                 result.add(next);
+                if (result.size() >= maxBlocks) break;
             }
             if (result.size() >= maxBlocks) break;
         }
         return result;
-    }
-
-    static synchronized List<BlockPos> getNeighborOffsets(int range) {
-        if (range <= 0) return Collections.emptyList();
-        List<BlockPos> offsets = NEIGHBOR_OFFSETS.get(range);
-        if (offsets != null) return offsets;
-
-        offsets = buildNeighborOffsets(range);
-        NEIGHBOR_OFFSETS.put(range, offsets);
-        return offsets;
     }
 
     private static boolean isCreative(EntityPlayer player) {

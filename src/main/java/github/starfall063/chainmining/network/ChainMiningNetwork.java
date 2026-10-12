@@ -1,6 +1,7 @@
 package github.starfall063.chainmining.network;
 
 import github.starfall063.chainmining.Tags;
+import github.starfall063.chainmining.ChainMiningConfig;
 import github.starfall063.chainmining.item.ItemChainStorageTerminal;
 import github.starfall063.chainmining.util.ChainMiningStateManager;
 import io.netty.buffer.ByteBuf;
@@ -90,6 +91,9 @@ public final class ChainMiningNetwork {
             totalCount = buf.readInt();
             neighborRangeLimit = buf.readInt();
             int n = buf.readInt();
+            if (totalCount < 0 || totalCount > 8192 || n < 0 || n > totalCount || buf.readableBytes() < n * 8) {
+                throw new IllegalArgumentException("Invalid chain preview payload size");
+            }
             pos = new long[n];
             for (int i = 0; i < n; i++) {
                 pos[i] = buf.readLong();
@@ -118,8 +122,11 @@ public final class ChainMiningNetwork {
                     ChainMiningStateManager.setPreviewBlocks(blocks);
                     ChainMiningStateManager.setPreviewTotal(message.totalCount);
                     ChainMiningStateManager.setServerNeighborRangeLimit(message.neighborRangeLimit);
-                    ChainMiningStateManager.setPreviewRendered(blocks.size());
-                    ChainMiningStateManager.setPreviewHidden(Math.max(0, message.totalCount - blocks.size()));
+                    int rendered = ChainMiningConfig.CLIENT.chainMiningEnablePreview
+                            ? Math.min(blocks.size(), ChainMiningConfig.effectivePreviewRenderLimit()) : 0;
+                    ChainMiningStateManager.setPreviewRendered(rendered);
+                    ChainMiningStateManager.setPreviewHidden(ChainMiningConfig.CLIENT.chainMiningEnablePreview
+                            ? Math.max(0, message.totalCount - rendered) : 0);
                 });
                 return null;
             }
@@ -134,12 +141,14 @@ public final class ChainMiningNetwork {
         int hitFaceOrdinal = -1;
         boolean hasTarget;
         long originPos;
+        int previewRenderLimit = 128;
+        boolean resyncPreview;
 
         public StateMessage() {
 
         }
 
-        public StateMessage(boolean enabled, String shape, String matchMode, int neighborRange, int hitFaceOrdinal, boolean hasTarget, long originPos) {
+        public StateMessage(boolean enabled, String shape, String matchMode, int neighborRange, int hitFaceOrdinal, boolean hasTarget, long originPos, int previewRenderLimit, boolean resyncPreview) {
             this.enabled = enabled;
             this.shape = shape;
             this.matchMode = matchMode;
@@ -147,6 +156,8 @@ public final class ChainMiningNetwork {
             this.hitFaceOrdinal = hitFaceOrdinal;
             this.hasTarget = hasTarget;
             this.originPos = originPos;
+            this.previewRenderLimit = previewRenderLimit;
+            this.resyncPreview = resyncPreview;
         }
 
         @Override
@@ -158,6 +169,8 @@ public final class ChainMiningNetwork {
             hitFaceOrdinal = buf.readInt();
             hasTarget = buf.readBoolean();
             originPos = buf.readLong();
+            previewRenderLimit = buf.readInt();
+            resyncPreview = buf.readBoolean();
         }
 
         @Override
@@ -169,6 +182,8 @@ public final class ChainMiningNetwork {
             buf.writeInt(hitFaceOrdinal);
             buf.writeBoolean(hasTarget);
             buf.writeLong(originPos);
+            buf.writeInt(previewRenderLimit);
+            buf.writeBoolean(resyncPreview);
         }
 
         public static class Handler implements IMessageHandler<StateMessage, IMessage> {
@@ -178,6 +193,7 @@ public final class ChainMiningNetwork {
 
                 playerMP.getServerWorld().addScheduledTask(() -> {
                     ChainMiningStateManager.PlayerState playerState = ChainMiningStateManager.getServerState(playerMP.getUniqueID());
+                    if (message.resyncPreview || playerState.enabled != message.enabled) playerState.previewSync.invalidate();
                     playerState.enabled = message.enabled;
                     playerState.shape = message.shape;
                     playerState.matchMode = message.matchMode;
@@ -186,6 +202,7 @@ public final class ChainMiningNetwork {
                     playerState.hitFace = (message.hitFaceOrdinal < 0 || message.hitFaceOrdinal >= EnumFacing.values().length) ? null : EnumFacing.values()[message.hitFaceOrdinal];
                     playerState.hasTarget = message.hasTarget;
                     playerState.originPos = message.originPos;
+                    playerState.previewRenderLimit = Math.max(0, Math.min(message.previewRenderLimit, 8192));
                     playerState.dirty = true;
                 });
                 return null;

@@ -24,6 +24,7 @@ import net.minecraftforge.items.IItemHandler;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.UnaryOperator;
 
 @Mod.EventBusSubscriber(modid = Tags.MOD_ID)
 public class ChainMiningEventHandler {
@@ -85,7 +86,7 @@ public class ChainMiningEventHandler {
         for (Session s : SESSIONS.values()) {
             if (s.area.contains(entityPos)) {
                 if (entity instanceof EntityItem) {
-                    s.drops.add(((EntityItem) entity).getItem().copy());
+                    s.addDrop(((EntityItem) entity).getItem());
                 } else {
                     s.xp += ((EntityXPOrb) entity).xpValue;
                 }
@@ -97,22 +98,18 @@ public class ChainMiningEventHandler {
 
     private static void flushSession(EntityPlayerMP player, Session session) {
         World world = player.world;
-        Map<ChainMiningHooks.ItemKey, Integer> merged = new LinkedHashMap<>();
-        for (ItemStack stack : session.drops) {
-            if (stack.isEmpty()) continue;
-            merged.merge(new ChainMiningHooks.ItemKey(stack), stack.getCount(), Integer::sum);
-        }
-
         ItemStack storageCore = findEnabledStorageCore(player);
         String securityKey = storageCore.isEmpty() ? "" : ItemChainStorageTerminal.getSecurityKey(storageCore);
-        for (Map.Entry<ChainMiningHooks.ItemKey, Integer> e : merged.entrySet()) {
+        UnaryOperator<ItemStack> inserter = storageCore.isEmpty() || !Loader.isModLoaded("appliedenergistics2")
+                || session.drops.isEmpty() ? null : AeSecurityStorage.open(player, securityKey);
+        for (Map.Entry<ChainMiningHooks.ItemKey, Integer> e : session.drops.entrySet()) {
             int total = e.getValue();
             ItemStack base = e.getKey().toStack();
             while (total > 0) {
                 int size = Math.min(total, base.getMaxStackSize());
                 ItemStack out = base.copy();
                 out.setCount(size);
-                ItemStack remainder = storageCore.isEmpty() || !Loader.isModLoaded("appliedenergistics2") ? out : AeSecurityStorage.insert(player, out, securityKey);
+                ItemStack remainder = inserter == null ? out : inserter.apply(out);
                 if (!remainder.isEmpty()) Block.spawnAsEntity(world, session.origin, remainder);
                 total -= size;
             }

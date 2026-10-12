@@ -9,6 +9,8 @@ import github.starfall063.chainmining.util.BlockMatchMode;
 import github.starfall063.chainmining.util.ChainMiningStateManager;
 import github.starfall063.chainmining.util.ChainShapeMode;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.entity.EntityPlayerSP;
+import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.util.math.RayTraceResult;
 import net.minecraft.util.text.TextComponentString;
@@ -30,6 +32,10 @@ public class ChainMiningInputHandler {
     private static int lastHitFace = -114514;
     private static long lastOrigin = Long.MIN_VALUE;
     private static boolean lastHasTarget;
+    private static int lastPreviewRenderLimit = -1;
+    private static WorldClient lastWorld;
+    private static EntityPlayerSP lastPlayer;
+    private static boolean pendingPreviewResync = true;
 
     @SubscribeEvent
     public static void onClientTick(TickEvent.ClientTickEvent event) {
@@ -38,7 +44,18 @@ public class ChainMiningInputHandler {
         Minecraft mc = Minecraft.getMinecraft();
         if (mc.player == null || mc.world == null) {
             ChainMiningStateManager.setClientEnabled(false);
+            ChainMiningStateManager.clearPreview();
+            lastWorld = null;
+            lastPlayer = null;
+            pendingPreviewResync = true;
             return;
+        }
+
+        if (mc.world != lastWorld || mc.player != lastPlayer) {
+            ChainMiningStateManager.clearPreview();
+            pendingPreviewResync = true;
+            lastWorld = mc.world;
+            lastPlayer = mc.player;
         }
 
         boolean keyDown = ChainMiningKeyBindings.CHAIN_MINING_KEY.isKeyDown();
@@ -52,7 +69,7 @@ public class ChainMiningInputHandler {
             originPos = mc.objectMouseOver.getBlockPos().toLong();
             face = mc.objectMouseOver.sideHit.ordinal();
         }
-        syncIfChanged(keyDown, hasTarget, originPos, face);
+        syncIfChanged(keyDown, hasTarget, originPos, face, pendingPreviewResync);
     }
 
     @SubscribeEvent
@@ -77,15 +94,17 @@ public class ChainMiningInputHandler {
         event.setCanceled(true);
     }
 
-    private static void syncIfChanged(boolean enabled, boolean hasTarget, long origin, int face) {
+    private static void syncIfChanged(boolean enabled, boolean hasTarget, long origin, int face, boolean resyncPreview) {
         Minecraft mc =  Minecraft.getMinecraft();
         if (mc.getConnection() == null || mc.player == null) return;
 
         String shape = ChainMiningConfig.CLIENT.chainMiningShape;
         String matchMode = ChainMiningConfig.CLIENT.chainMiningMatchMode;
         int range = getCurrentNeighborRange();
+        int previewRenderLimit = ChainMiningConfig.CLIENT.chainMiningEnablePreview
+                ? ChainMiningConfig.effectivePreviewRenderLimit() : 0;
 
-        if (enabled == lastEnabled && shape.equalsIgnoreCase(lastShape) && matchMode.equalsIgnoreCase(lastMatchMode) && range == lastNeighborRange && face == lastHitFace && hasTarget == lastHasTarget && origin == lastOrigin ) return;
+        if (!resyncPreview && previewRenderLimit == lastPreviewRenderLimit && enabled == lastEnabled && shape.equalsIgnoreCase(lastShape) && matchMode.equalsIgnoreCase(lastMatchMode) && range == lastNeighborRange && face == lastHitFace && hasTarget == lastHasTarget && origin == lastOrigin ) return;
 
         lastEnabled = enabled;
         lastShape = shape;
@@ -94,8 +113,10 @@ public class ChainMiningInputHandler {
         lastHitFace = face;
         lastHasTarget = hasTarget;
         lastOrigin = origin;
+        lastPreviewRenderLimit = previewRenderLimit;
 
-        ChainMiningNetwork.CHANNEL.sendToServer(new ChainMiningNetwork.StateMessage(enabled, shape, matchMode, range, face, hasTarget, origin));
+        ChainMiningNetwork.CHANNEL.sendToServer(new ChainMiningNetwork.StateMessage(enabled, shape, matchMode, range, face, hasTarget, origin, previewRenderLimit, resyncPreview));
+        pendingPreviewResync = false;
     }
 
     private static void cycleMatchMode(int wheel) {
