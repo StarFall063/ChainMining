@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "CBC",
+    "AEA",
+    "CDC"
+  ],
+  "key": {
+    "A": {"item": "appliedenergistics2:material", "data": 9},
+    "B": {"item": "appliedenergistics2:material", "data": 41},
+    "C": {"item": "appliedenergistics2:material", "data": 12},
+    "D": {"item": "appliedenergistics2:material", "data": 47},
+    "E": {"item": "appliedenergistics2:part", "data": 380}
+  },
+  "result": {"item": "chainmining:chain_storage_terminal"}
+}

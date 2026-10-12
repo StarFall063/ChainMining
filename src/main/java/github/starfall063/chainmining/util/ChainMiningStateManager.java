@@ -14,6 +14,7 @@ public final class ChainMiningStateManager {
     private static volatile int previewTotal;
     private static volatile int previewRendered;
     private static volatile int previewHidden;
+    private static volatile int serverNeighborRangeLimit = 5;
     private static volatile boolean clientEnabled;
     private static final Map<UUID, PlayerState> SERVER_STATES = new ConcurrentHashMap<>();
 
@@ -68,6 +69,11 @@ public final class ChainMiningStateManager {
     public static void setPreviewRendered(int n) { previewRendered = n; }
     public static int getPreviewHidden() { return previewHidden; }
     public static void setPreviewHidden(int n) { previewHidden = n; }
+
+    public static int getServerNeighborRangeLimit() { return serverNeighborRangeLimit; }
+    public static void setServerNeighborRangeLimit(int value) {
+        serverNeighborRangeLimit = Math.max(1, Math.min(value, 16));
+    }
 
     public static final class PlayerState {
         public boolean enabled;

@@ -53,7 +53,7 @@ public final class ChainMiningServerPreview {
             return;
         }
 
-        List<BlockPos> blockPos = ChainMiningHooks.scanBlocks(world, origin, sState, id, mode, ChainMiningConfig.SERVER.chainMiningMaxBlocks, state.neighborRange, player, shape, state.hitFace);
+        List<BlockPos> blockPos = ChainMiningHooks.scanBlocks(world, origin, sState, id, mode, ChainMiningConfig.effectiveMaxBlocks(), Math.min(state.neighborRange, ChainMiningConfig.effectiveNeighborRange()), player, shape, state.hitFace);
         int total = blockPos.size();
         long[] array = new long[total];
         for (int i = 0; i < total; i++) array[i] = blockPos.get(i).toLong();
@@ -61,6 +61,7 @@ public final class ChainMiningServerPreview {
     }
 
     private static void send(EntityPlayerMP player, int total, long[] pos) {
-        ChainMiningNetwork.CHANNEL.sendTo(new ChainMiningNetwork.PreviewMessage(total, pos), player);
+        ChainMiningNetwork.CHANNEL.sendTo(new ChainMiningNetwork.PreviewMessage(
+                total, pos, ChainMiningConfig.effectiveNeighborRange()), player);
     }
 }

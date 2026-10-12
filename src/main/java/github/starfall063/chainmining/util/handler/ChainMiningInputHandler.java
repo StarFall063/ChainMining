@@ -26,6 +26,7 @@ public class ChainMiningInputHandler {
     private static String lastShape = "";
     private static String lastMatchMode = "";
     private static int lastNeighborRange = -114514;
+    private static int currentNeighborRange = 1;
     private static int lastHitFace = -114514;
     private static long lastOrigin = Long.MIN_VALUE;
     private static boolean lastHasTarget;
@@ -82,7 +83,7 @@ public class ChainMiningInputHandler {
 
         String shape = ChainMiningConfig.CLIENT.chainMiningShape;
         String matchMode = ChainMiningConfig.CLIENT.chainMiningMatchMode;
-        int range = ChainMiningConfig.CLIENT.chainMiningNeighborRange;
+        int range = getCurrentNeighborRange();
 
         if (enabled == lastEnabled && shape.equalsIgnoreCase(lastShape) && matchMode.equalsIgnoreCase(lastMatchMode) && range == lastNeighborRange && face == lastHitFace && hasTarget == lastHasTarget && origin == lastOrigin ) return;
 
@@ -106,12 +107,25 @@ public class ChainMiningInputHandler {
     }
 
     private static void adjustNeighborRange(int wheel) {
-        int current = ChainMiningConfig.CLIENT.chainMiningNeighborRange;
-        int next = wheel > 0 ? current - 1 : current + 1;
-        if (next < 1) next = 5;
-        if (next > 5) next = 1;
-        ChainMiningConfig.CLIENT.chainMiningNeighborRange = next;
+        int next = cycleNeighborRange(currentNeighborRange, wheel,
+                ChainMiningStateManager.getServerNeighborRangeLimit());
+        currentNeighborRange = next;
         showStatus(ChainMiningLang.tr("message.chainmining.range", next));
+    }
+
+    static int cycleNeighborRange(int current, int wheel, int configuredLimit) {
+        int limit = Math.max(1, Math.min(configuredLimit, 64));
+        current = Math.max(1, Math.min(current, limit));
+        int next = wheel > 0 ? current - 1 : current + 1;
+        if (next < 1) return limit;
+        if (next > limit) return 1;
+        return next;
+    }
+
+    static int getCurrentNeighborRange() {
+        int limit = ChainMiningStateManager.getServerNeighborRangeLimit();
+        currentNeighborRange = Math.max(1, Math.min(currentNeighborRange, limit));
+        return currentNeighborRange;
     }
 
     private static void cycleShape(int wheel) {

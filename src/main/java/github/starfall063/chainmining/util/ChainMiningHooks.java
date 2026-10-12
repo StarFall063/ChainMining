@@ -24,13 +24,13 @@ public final class ChainMiningHooks {
     private static final Map<Integer, List<BlockPos>> NEIGHBOR_OFFSETS = new HashMap<>();
 
     static {
-        // The configured radius is capped at five, so this cache remains very small.
         for (int range = 1; range <= 5; range++) {
             NEIGHBOR_OFFSETS.put(range, buildNeighborOffsets(range));
         }
     }
 
     public static boolean isToolBlacklisted(ItemStack tool) {
+        if (ChainMiningConfig.SERVER.chainMiningIgnoreHeldItem) return false;
         if (tool.isEmpty()) return false;
         ResourceLocation id = tool.getItem().getRegistryName();
         if (id == null) return false;
@@ -51,6 +51,7 @@ public final class ChainMiningHooks {
     }
 
     public static boolean isBlockBlacklisted(World world, BlockPos pos, IBlockState state) {
+        if (ChainMiningConfig.SERVER.chainMiningIgnoreHeldItem) return false;
         Block block = state.getBlock();
         ResourceLocation id = block.getRegistryName();
         if (id == null) return false;
@@ -66,16 +67,15 @@ public final class ChainMiningHooks {
     }
 
     public static boolean canChainMineBlock(World world, BlockPos pos, IBlockState state, EntityPlayer player, ItemStack held) {
-        if (world == null || pos == null || state == null || !world.isBlockLoaded(pos)
-                || state.getBlock().isAir(state, world, pos)) return false;
+        if (world == null || pos == null || state == null || !world.isBlockLoaded(pos) || state.getBlock().isAir(state, world, pos)) return false;
 
         if (player != null && player.capabilities.isCreativeMode) return true;
 
-       boolean canHarvest = player != null && ForgeHooks.canHarvestBlock(state.getBlock(), player, world, pos);
+        boolean canHarvest = player != null && ForgeHooks.canHarvestBlock(state.getBlock(), player, world, pos);
 
         if (player != null && state.getPlayerRelativeBlockHardness(player, world, pos) <= 0F) return false;
-       if (ChainMiningConfig.SERVER.chainMiningIgnoreHeldItem) return true;
-       return canHarvest;
+        if (ChainMiningConfig.SERVER.chainMiningIgnoreHeldItem) return true;
+        return canHarvest;
     }
 
     public static List<BlockPos> scanBlocks(World world, BlockPos startPos, IBlockState startState, BlockIdentity sourceId, BlockMatchMode matchMode, int maxBlocks, int neighborRange, EntityPlayer player, ChainShapeMode shapeMode, EnumFacing hitFace) {
@@ -125,7 +125,7 @@ public final class ChainMiningHooks {
             IBlockState state = world.getBlockState(next);
 
             if (state.getBlock().isAir(state, world, next)
-                    || isBlockBlacklisted(world, next, state)
+                    || (!isCreative(player) && isBlockBlacklisted(world, next, state))
                     || !canChainMineBlock(world, next, state, player, tool)
                     || !sourceId.matches(world, next, state, matchMode)) {
                 gap++;
@@ -182,7 +182,7 @@ public final class ChainMiningHooks {
                     IBlockState state = world.getBlockState(candidate);
 
                     if (state.getBlock().isAir(state, world, candidate)
-                            || isBlockBlacklisted(world, candidate, state)
+                            || (!isCreative(player) && isBlockBlacklisted(world, candidate, state))
                             || !canChainMineBlock(world, candidate, state, player, tool)
                             || !sourceId.matches(world, candidate, state, matchMode)) continue;
                     result.add(candidate);
@@ -191,7 +191,10 @@ public final class ChainMiningHooks {
             }
             if (depth > 0) {
                 if (layerHit) gap = 0;
-                else { gap++; if (gap > neighborRange) break; }
+                else {
+                    gap++;
+                    if (gap > neighborRange) break;
+                }
             }
         }
         return result;
@@ -223,7 +226,7 @@ public final class ChainMiningHooks {
                 if (!world.isBlockLoaded(next)) continue;
                 IBlockState nextState = world.getBlockState(next);
                 if (nextState.getBlock().isAir(nextState, world, next)) continue;
-                if (isBlockBlacklisted(world, next, nextState)) continue;
+                if (!isCreative(player) && isBlockBlacklisted(world, next, nextState)) continue;
                 if (!canChainMineBlock(world, next, nextState, player, tool)) continue;
                 if (!sourceId.matches(world, next, nextState, matchMode)) continue;
                 if (result.size() >= maxBlocks) break;
@@ -235,17 +238,18 @@ public final class ChainMiningHooks {
         return result;
     }
 
-    /**
-     * Returns immutable offsets sorted by distance from the origin. Offsets are
-     * independent of world state, so reusing them cannot make a preview stale.
-     */
-    static List<BlockPos> getNeighborOffsets(int range) {
+    static synchronized List<BlockPos> getNeighborOffsets(int range) {
         if (range <= 0) return Collections.emptyList();
         List<BlockPos> offsets = NEIGHBOR_OFFSETS.get(range);
         if (offsets != null) return offsets;
 
-        // Keep the cache bounded if a caller supplies a range outside config.
-        return buildNeighborOffsets(range);
+        offsets = buildNeighborOffsets(range);
+        NEIGHBOR_OFFSETS.put(range, offsets);
+        return offsets;
+    }
+
+    private static boolean isCreative(EntityPlayer player) {
+        return player != null && player.capabilities.isCreativeMode;
     }
 
     private static List<BlockPos> buildNeighborOffsets(int range) {
@@ -270,14 +274,14 @@ public final class ChainMiningHooks {
             if (state.getBlock().isAir(state, world, pos)) continue;
 
             if (!player.capabilities.isCreativeMode) {
-                if (player.getFoodStats().getFoodLevel() < ChainMiningConfig.SERVER.chainMiningMinFoodLevel) break;
+                if (player.getFoodStats().getFoodLevel() < ChainMiningConfig.effectiveMinFoodLevel()) break;
             }
 
             player.interactionManager.tryHarvestBlock(pos);
             if (!player.capabilities.isCreativeMode) {
-                player.addExhaustion((float) ChainMiningConfig.SERVER.chainMiningExhaustionPerBlock);
+                player.addExhaustion((float) ChainMiningConfig.effectiveExhaustionPerBlock());
             }
-       }
+        }
     }
 
     private static boolean matchesWildcard(String pattern, String text) {

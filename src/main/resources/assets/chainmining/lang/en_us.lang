@@ -1,31 +1,41 @@
 # === Chain Mining ===
-shape.chainmining.shapeless=Shapeless Chain
-shape.chainmining.plane=Facing Plane
-shape.chainmining.tunnel=3x3 Tunnel
+shape.chainmining.shapeless=Shapeless Mining
+shape.chainmining.plane=One-way Mining
+shape.chainmining.tunnel=3x3 Tunnel Mining
 
-match.chainmining.meta_only=Meta Only
-match.chainmining.nbt_only=NBT Only
-match.chainmining.nbt_meta=NBT+Meta
-match.chainmining.registry_only=Registry Only
+match.chainmining.meta_only=Meta Match Only
+match.chainmining.nbt_only=NBT Match Only
+match.chainmining.nbt_meta=NBT+Meta Match
+match.chainmining.registry_only=Registry Name Match Only
 
-overlay.chainmining.disabled=Count: %s | Preview disabled
-overlay.chainmining.status=Chain Mining Enabled | Mode: %s
-overlay.chainmining.count=Count: %s | Rendered: %s | Hidden: %s
-overlay.chainmining.info=§eMatch: §f%s  §eRange: §f%s
+overlay.chainmining.status=§eChain mining active §r| §ePreview§r: %s§r
+overlay.chainmining.preview_enabled=§aEnabled§r
+overlay.chainmining.preview_disabled=§cDisabled§r
+overlay.chainmining.settings=§eChain shape§r: §f%s§r | §eMatch mode§r: §f%s§r | §eNeighbor range§r: §f%s§r / §f%s§r
+overlay.chainmining.count=§eChain count§r: §f%s§r | §eRendered count§r: §f%s§r | §eUnrendered count§r: §f%s§r
 
-message.chainmining.enabled=Chain mining enabled
-message.chainmining.disabled=Chain mining disabled
 message.chainmining.shape=Chain shape: %s
 message.chainmining.match_mode=Match mode: %s
 message.chainmining.range=Neighbor range: %s
-message.chainmining.neighbor_range=Neighbor search range: %s
 
 key.chainmining.enable=Hold Chain Mining
 key.categories.chainmining=Chain Mining
 
 enchantment.chainmining=Chain Mining
 
-item.chainmining.chain_upgrade_core.name=Chain upgrade core
+item.chainmining.chain_upgrade_core.name=Chain Upgrade Core
+
+item.chainmining.chain_storage_terminal.name=Chain Storage Terminal
+item.chainmining.chain_storage_terminal.state=§fTerminal status§r:
+item.chainmining.chain_storage_terminal.enabled=§aEnabled
+item.chainmining.chain_storage_terminal.disabled=§cDisabled
+item.chainmining.chain_storage_terminal.bind_state=§fAE network binding status§r:
+item.chainmining.chain_storage_terminal.bound=§aBound
+item.chainmining.chain_storage_terminal.unbound=§cUnbound
+item.chainmining.chain_storage_terminal.tooltip1=When enabled and bound to an available AE network, chain mining drops are stored directly in the AE network
+item.chainmining.chain_storage_terminal.tooltip2=Place the terminal in a Security Terminal to bind it
+item.chainmining.chain_storage_terminal.tooltip3=Right-click in your inventory or while holding the terminal to toggle its state
+item.chainmining.chain_storage_terminal.tooltip4=Sneak-right-click while holding the terminal to unbind it from the AE network
 
 modifier.chainmining.name=Chain!
-modifier.chainmining.desc=§oPretty good! §r\nNow you can chain-destroy blocks!
+modifier.chainmining.desc=§oSo good, even 9 out of 10!§r\nYou can now chain-break blocks!

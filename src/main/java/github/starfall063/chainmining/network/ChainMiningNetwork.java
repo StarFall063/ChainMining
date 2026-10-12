@@ -1,9 +1,12 @@
 package github.starfall063.chainmining.network;
 
 import github.starfall063.chainmining.Tags;
+import github.starfall063.chainmining.item.ItemChainStorageTerminal;
 import github.starfall063.chainmining.util.ChainMiningStateManager;
 import io.netty.buffer.ByteBuf;
 import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.inventory.Slot;
+import net.minecraft.item.ItemStack;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.math.BlockPos;
 import net.minecraftforge.fml.common.FMLCommonHandler;
@@ -24,21 +27,68 @@ public final class ChainMiningNetwork {
 
     }
 
+    public static class ToggleStorageCoreMessage implements IMessage {
+        int slot;
+        int windowId;
+
+        public ToggleStorageCoreMessage() {
+        }
+
+        public ToggleStorageCoreMessage(int windowId, int slot) {
+            this.windowId = windowId;
+            this.slot = slot;
+        }
+
+        @Override
+        public void fromBytes(ByteBuf buf) {
+            windowId = buf.readInt();
+            slot = buf.readInt();
+        }
+
+        @Override
+        public void toBytes(ByteBuf buf) {
+            buf.writeInt(windowId);
+            buf.writeInt(slot);
+        }
+
+        public static class Handler implements IMessageHandler<ToggleStorageCoreMessage, IMessage> {
+            @Override
+            public IMessage onMessage(ToggleStorageCoreMessage message, MessageContext context) {
+                EntityPlayerMP player = context.getServerHandler().player;
+                player.getServerWorld().addScheduledTask(() -> {
+                    if (player.openContainer == null || player.openContainer.windowId != message.windowId
+                            || message.slot < 0 || message.slot >= player.openContainer.inventorySlots.size()) return;
+                    Slot slot = player.openContainer.inventorySlots.get(message.slot);
+                    ItemStack stack = slot.getStack();
+                    if (stack.getItem() == ItemChainStorageTerminal.INSTANCE) {
+                        ItemChainStorageTerminal.setEnabled(player, stack, !ItemChainStorageTerminal.isEnabled(stack));
+                        slot.onSlotChanged();
+                    }
+                });
+                return null;
+            }
+        }
+    }
+
     public static class PreviewMessage implements IMessage {
         int totalCount;
         long[] pos;
+        int neighborRangeLimit;
 
         public PreviewMessage() {
-
+            neighborRangeLimit = 1;
         }
-        public PreviewMessage(int totalCount, long[] pos) {
+
+        public PreviewMessage(int totalCount, long[] pos, int neighborRangeLimit) {
             this.totalCount = totalCount;
             this.pos = pos;
+            this.neighborRangeLimit = neighborRangeLimit;
         }
 
         @Override
         public void fromBytes(ByteBuf buf) {
             totalCount = buf.readInt();
+            neighborRangeLimit = buf.readInt();
             int n = buf.readInt();
             pos = new long[n];
             for (int i = 0; i < n; i++) {
@@ -49,6 +99,7 @@ public final class ChainMiningNetwork {
         @Override
         public void toBytes(ByteBuf buf) {
             buf.writeInt(totalCount);
+            buf.writeInt(neighborRangeLimit);
             buf.writeInt(pos.length);
             for (long p : pos) {
                 buf.writeLong(p);
@@ -64,10 +115,11 @@ public final class ChainMiningNetwork {
                     for (long p : message.pos) {
                         blocks.add(BlockPos.fromLong(p));
                     }
-                   ChainMiningStateManager.setPreviewBlocks(blocks);
-                   ChainMiningStateManager.setPreviewTotal(message.totalCount);
-                   ChainMiningStateManager.setPreviewRendered(blocks.size());
-                   ChainMiningStateManager.setPreviewHidden(Math.max(0, message.totalCount - blocks.size()));
+                    ChainMiningStateManager.setPreviewBlocks(blocks);
+                    ChainMiningStateManager.setPreviewTotal(message.totalCount);
+                    ChainMiningStateManager.setServerNeighborRangeLimit(message.neighborRangeLimit);
+                    ChainMiningStateManager.setPreviewRendered(blocks.size());
+                    ChainMiningStateManager.setPreviewHidden(Math.max(0, message.totalCount - blocks.size()));
                 });
                 return null;
             }
@@ -129,7 +181,8 @@ public final class ChainMiningNetwork {
                     playerState.enabled = message.enabled;
                     playerState.shape = message.shape;
                     playerState.matchMode = message.matchMode;
-                    playerState.neighborRange = Math.max(1, Math.min(message.neighborRange, 5));
+                    int limit = github.starfall063.chainmining.ChainMiningConfig.effectiveNeighborRange();
+                    playerState.neighborRange = Math.max(1, Math.min(message.neighborRange, limit));
                     playerState.hitFace = (message.hitFaceOrdinal < 0 || message.hitFaceOrdinal >= EnumFacing.values().length) ? null : EnumFacing.values()[message.hitFaceOrdinal];
                     playerState.hasTarget = message.hasTarget;
                     playerState.originPos = message.originPos;

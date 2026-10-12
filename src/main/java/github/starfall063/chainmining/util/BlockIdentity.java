@@ -9,25 +9,23 @@ import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
-import java.util.HashSet;
-import java.util.HashMap;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.LinkedHashSet;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
 public final class BlockIdentity {
-    private final String blockId;
-    private final int meta;
-    private final NBTTagCompound nbt;
-
     private static final Set<String> KEY_WHITELIST = new HashSet<>();
     private static volatile String[] lastNbtKeys = null;
     private static volatile String[] lastEquivalentGroups = null;
     private static volatile Map<String, String> equivalentBlockIds = Collections.emptyMap();
     private static volatile Set<String> equivalentMetaWildcards = Collections.emptySet();
+    private final String blockId;
+    private final int meta;
+    private final NBTTagCompound nbt;
+
+    private BlockIdentity(String blockId, int meta, NBTTagCompound nbt) {
+        this.blockId = blockId;
+        this.meta = meta;
+        this.nbt = nbt;
+    }
 
     static void refreshWhitelist() {
         String[] keys = ChainMiningConfig.SERVER.chainMiningNbtMatchKeys;
@@ -79,21 +77,15 @@ public final class BlockIdentity {
         }
     }
 
-    private BlockIdentity(String blockId, int meta, NBTTagCompound nbt) {
-        this.blockId = blockId;
-        this.meta = meta;
-        this.nbt = nbt;
-    }
-
     public static BlockIdentity from(World world, BlockPos pos, IBlockState state, BlockMatchMode matchMode) {
         Block block = state.getBlock();
         ResourceLocation id = block.getRegistryName();
         if (id == null) return null;
 
-        String blockId = normalizeBlockId(id.toString());
+        String rawBlockId = normalizeVanillaBlockId(id.toString());
+        String blockId = normalizeBlockId(rawBlockId);
 
-        int meta = matchMode.shouldMatchMeta() && !hasEquivalentMetaWildcard(blockId)
-                ? block.getMetaFromState(state) : -1;
+        int meta = matchMode.shouldMatchMeta() && !hasEquivalentMetaWildcard(rawBlockId) ? block.getMetaFromState(state) : -1;
 
         NBTTagCompound nbt = null;
         if (matchMode.shouldMatchNbt()) {
@@ -103,24 +95,6 @@ public final class BlockIdentity {
         }
 
         return new BlockIdentity(blockId, meta, nbt);
-    }
-
-    public boolean matches(World world, BlockPos pos, IBlockState state, BlockMatchMode matchMode) {
-        if (matchMode.shouldMatchNbt()) refreshWhitelist();
-        
-        ResourceLocation id = state.getBlock().getRegistryName();
-        if (id == null) return false;
-        String targetBockId = normalizeBlockId(id.toString());
-        if (!this.blockId.equals(targetBockId)) return false;
-
-        if (matchMode.shouldMatchMeta() && this.meta >= 0
-                && this.meta != state.getBlock().getMetaFromState(state)) return false;
-        if (matchMode.shouldMatchNbt()) {
-            NBTTagCompound rawNbt = getBlockNbt(world, pos);
-            NBTTagCompound otherNbt = extractWhitelistNbt(rawNbt);
-            if (!Objects.equals(this.nbt, otherNbt)) return false;
-        }
-        return true;
     }
 
     private static String normalizeBlockId(String blockId) {
@@ -155,8 +129,7 @@ public final class BlockIdentity {
                         String trimmed = entry.trim();
                         if (trimmed.isEmpty()) continue;
                         boolean wildcardMeta = trimmed.endsWith(":*");
-                        String blockPattern = wildcardMeta
-                                ? trimmed.substring(0, trimmed.length() - 2) : trimmed;
+                        String blockPattern = wildcardMeta ? trimmed.substring(0, trimmed.length() - 2) : trimmed;
                         Set<String> matchedIds = new LinkedHashSet<>();
                         if (blockPattern.indexOf('*') >= 0) {
                             for (ResourceLocation registeredId : Block.REGISTRY.getKeys()) {
@@ -170,7 +143,6 @@ public final class BlockIdentity {
                                     matchedIds.add(id);
                                 }
                             } catch (IllegalArgumentException ignored) {
-                                // Ignore malformed registry IDs in configuration.
                             }
                         }
                         validIds.addAll(matchedIds);
@@ -195,20 +167,15 @@ public final class BlockIdentity {
                     }
                 }
             }
-            Set<String> canonicalMetaWildcards = new HashSet<>();
-            for (String id : metaWildcardIds) {
-                String canonical = resolveAlias(aliases, id);
-                canonicalMetaWildcards.add(canonical);
-            }
             equivalentBlockIds = Collections.unmodifiableMap(aliases);
-            equivalentMetaWildcards = Collections.unmodifiableSet(canonicalMetaWildcards);
+            equivalentMetaWildcards = Collections.unmodifiableSet(new HashSet<>(metaWildcardIds));
             lastEquivalentGroups = configured == null ? null : configured.clone();
         }
     }
 
-    private static boolean hasEquivalentMetaWildcard(String canonicalId) {
+    private static boolean hasEquivalentMetaWildcard(String blockId) {
         refreshEquivalentGroups();
-        return equivalentMetaWildcards.contains(canonicalId);
+        return equivalentMetaWildcards.contains(blockId);
     }
 
     private static String resolveAlias(Map<String, String> aliases, String id) {
@@ -229,5 +196,24 @@ public final class BlockIdentity {
             regex.append(java.util.regex.Pattern.quote(parts[i]));
         }
         return text.matches(regex.toString());
+    }
+
+    public boolean matches(World world, BlockPos pos, IBlockState state, BlockMatchMode matchMode) {
+        if (matchMode.shouldMatchNbt()) refreshWhitelist();
+
+        ResourceLocation id = state.getBlock().getRegistryName();
+        if (id == null) return false;
+        String rawBlockId = normalizeVanillaBlockId(id.toString());
+        String targetBockId = normalizeBlockId(rawBlockId);
+        if (!this.blockId.equals(targetBockId)) return false;
+
+        if (matchMode.shouldMatchMeta() && this.meta >= 0 && !hasEquivalentMetaWildcard(rawBlockId) && this.meta != state.getBlock().getMetaFromState(state))
+            return false;
+        if (matchMode.shouldMatchNbt()) {
+            NBTTagCompound rawNbt = getBlockNbt(world, pos);
+            NBTTagCompound otherNbt = extractWhitelistNbt(rawNbt);
+            if (!Objects.equals(this.nbt, otherNbt)) return false;
+        }
+        return true;
     }
 }

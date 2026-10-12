@@ -8,17 +8,15 @@ match.chainmining.nbt_only=仅NBT匹配
 match.chainmining.nbt_meta=NBT+Meta匹配
 match.chainmining.registry_only=仅注册名匹配
 
-overlay.chainmining.disabled=链式挖掘数量: %s | 预览已禁用
-overlay.chainmining.status=链式挖掘已启用 | 模式: %s
-overlay.chainmining.count=链式挖掘数量: %s | 渲染数量: %s | 未渲染数量: %s
-overlay.chainmining.info=§e匹配模式: §f%s  §e范围: §f%s
+overlay.chainmining.status=§e链式挖掘已激活 §r| §e预览§r: %s§r
+overlay.chainmining.preview_enabled=§a已启用§r
+overlay.chainmining.preview_disabled=§c已禁用§r
+overlay.chainmining.settings=§e连锁形状§r: §f%s§r | §e匹配模式§r: §f%s§r | §e相邻范围§r: §f%s§r / §f%s§r
+overlay.chainmining.count=§e连锁数量§r: §f%s§r | §e渲染数量§r: §f%s§r | §e未渲染数量§r: §f%s§r
 
-message.chainmining.enabled=链式挖掘已开启
-message.chainmining.disabled=链式挖掘已关闭
 message.chainmining.shape=连锁形状: %s
 message.chainmining.match_mode=匹配模式: %s
 message.chainmining.range=相邻范围: %s
-message.chainmining.neighbor_range=相邻搜索范围: %s
 
 key.chainmining.enable=按住启用链式挖掘
 key.categories.chainmining=链式挖掘
@@ -26,6 +24,18 @@ key.categories.chainmining=链式挖掘
 enchantment.chainmining=链式挖掘
 
 item.chainmining.chain_upgrade_core.name=连锁升级核心
+
+item.chainmining.chain_storage_terminal.name=连锁存储终端
+item.chainmining.chain_storage_terminal.state=§f终端状态§r:
+item.chainmining.chain_storage_terminal.enabled=§a已启用
+item.chainmining.chain_storage_terminal.disabled=§c已禁用
+item.chainmining.chain_storage_terminal.bind_state=§fAE网络绑定状态§r:
+item.chainmining.chain_storage_terminal.bound=§a已绑定
+item.chainmining.chain_storage_terminal.unbound=§c未绑定
+item.chainmining.chain_storage_terminal.tooltip1=启用且已绑定可用的AE网络时连锁掉落的物品将直接存入AE网络中
+item.chainmining.chain_storage_terminal.tooltip2=将终端放入安全终端以绑定
+item.chainmining.chain_storage_terminal.tooltip3=在背包内直接右键或手持右键以切换终端状态
+item.chainmining.chain_storage_terminal.tooltip4=手持下蹲右键以解绑已绑定的AE网络
 
 modifier.chainmining.name=连锁！
 modifier.chainmining.desc=§o十分甚至九分的不错！§r\n现在你可以连锁破坏方块了！

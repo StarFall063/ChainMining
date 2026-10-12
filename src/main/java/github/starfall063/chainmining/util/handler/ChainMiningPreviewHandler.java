@@ -30,9 +30,14 @@ public class ChainMiningPreviewHandler {
         List<BlockPos> blocks = ChainMiningStateManager.getPreviewBlocks();
         if (blocks == null || blocks.isEmpty() || !ChainMiningStateManager.isClientEnabled()) return;
 
-        if (!ChainMiningConfig.CLIENT.chainMiningEnablePreview) return;
+        if (!ChainMiningConfig.CLIENT.chainMiningEnablePreview) {
+            // Keep HUD preview statistics from describing a wireframe that is not rendered.
+            ChainMiningStateManager.setPreviewRendered(0);
+            ChainMiningStateManager.setPreviewHidden(0);
+            return;
+        }
 
-        int limit = Math.min(blocks.size(), ChainMiningConfig.CLIENT.chainMiningPreviewRenderLimit);
+        int limit = Math.min(blocks.size(), ChainMiningConfig.effectivePreviewRenderLimit());
         ChainMiningStateManager.setPreviewRendered(limit);
         ChainMiningStateManager.setPreviewHidden(Math.max(0, blocks.size() - limit));
         List<BlockPos> visibleBlocks = new ArrayList<>(blocks.subList(0, limit));

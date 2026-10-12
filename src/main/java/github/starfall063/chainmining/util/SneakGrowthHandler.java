@@ -52,7 +52,7 @@ public final class SneakGrowthHandler {
 
     private static void growNearby(EntityPlayer player) {
         if (player.world.isRemote) return;
-        int radius = Math.max(1, Math.min(16, ChainMiningConfig.SERVER.chainMiningSneakGrowRadius));
+        int radius = ChainMiningConfig.effectiveSneakGrowRadius();
         BlockPos center = player.getPosition();
         for (int x = -radius; x <= radius; x++) {
             for (int y = -radius; y <= radius; y++) {

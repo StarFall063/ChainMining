@@ -24,7 +24,7 @@
   - **NBT 匹配** — 按方块注册名 + 白名单 NBT 数据匹配
   - **NBT+Meta** — 按方块注册名 + metadata + NBT 匹配
   - **仅注册名** — 仅按方块注册名匹配
-- **可调搜索范围** — 按住热键同时按住shift + Alt用滚轮调整相邻搜索范围（1-5）
+- **可调搜索范围** — 服务端设置最大范围；按住热键同时按住shift + Alt用滚轮在 `1` 到该上限之间调整
 - **掉落物聚合** — 所有掉落物和经验球在原始方块位置生成，减少实体卡顿
 - **工具与方块黑名单** — 支持通配符，精确控制连锁行为
 - **等价方块组** — 服务端可将不同注册名视为同一种方块，支持 `*` 通配符
@@ -55,25 +55,25 @@
 |---|---|---|
 | `chainMiningShape` | `shapeless` | 连锁形态：`shapeless` / `plane` / `tunnel` |
 | `chainMiningMatchMode` | `meta` | 匹配模式：`meta` / `nbt` / `registry` / `nbt_meta` |
-| `chainMiningHudPosition` | `top_left` | HUD 面板位置：`top_left` / `top_right` |
+| `chainMiningHudPosition` | `top_left` | HUD位置：`top_left`、`top_center`、`top_right`、`middle_left`、`middle_right`、`bottom_left`、`bottom_center`、`bottom_right`；分别对应左上、中上、右上、中左、中右、左下、中下、右下；无效值回退到左上 |
 | `chainMiningPreviewColor` | `FFE65CEB` | 预览线框颜色（十六进制 ARGB）或 `rainbow` |
-| `chainMiningPreviewRenderLimit` | `128` | 预览渲染最大方块数（1-1024） |
-| `chainMiningNeighborRange` | `1` | 相邻搜索范围（1-5） |
+| `chainMiningPreviewRenderLimit` | `128` | 预览渲染最大方块数（1-8192） |
 | `chainMiningEnablePreview` | `true` | 是否启用预览 |
 
 #### 服务端设置
 
 | 配置项 | 默认值 | 说明 |
 |---|---|---|
-| `chainMiningMaxBlocks` | `128` | 单次连锁最大方块数（1-1024） |
+| `chainMiningMaxBlocks` | `128` | 单次连锁最大方块数（1-8192） |
+| `chainMiningNeighborRange` | `5` | 允许的最大相邻搜索范围（1-16）；客户端只能在 `1` 到该值之间选择 |
 | `chainMiningExhaustionPerBlock` | `0.1` | 每个连锁方块的饥饿值消耗（0.0-20.0） |
-| `chainMiningMinFoodLevel` | `0.1` | 触发连锁的最低饱食度（0.0-20.0） |
+| `chainMiningMinFoodLevel` | `1` | 每个方块执行前所需的最低整数饥饿值；低于该值时停止连锁（0-20） |
 | `chainMiningIgnoreHeldItem` | `false` | 是否无视手持物品限制 |
-| `chainMiningRefreshInterval` | `1` | 服务端预览刷新间隔（tick，0=关闭） |
+| `chainMiningRefreshInterval` | `1` | 服务端预览刷新间隔（tick；0关闭，1为每tick） |
 | `chainMiningToolBlackList` | `{}` | 工具黑名单（支持通配符） |
 | `chainMiningBlockBlackList` | `{}` | 方块黑名单（支持通配符） |
 | `chainMiningNbtMatchKeys` | `[id, tier, type]` | NBT 匹配时比较的键名列表 |
-| `chainMiningEquivalentBlockGroups` | `minecraft:tallgrass:*,minecraft:yellow_flower:*,minecraft:red_flower:*,minecraft:double_plant:*` | 等价方块组；每项用逗号分隔，支持 `*`，`:*` 后缀忽略 metadata |
+| `chainMiningEquivalentBlockGroups` | `minecraft:tallgrass:*,minecraft:yellow_flower:*,minecraft:red_flower:*,minecraft:double_plant:*` | 等价方块组；数组中的每一项是一组，组内用逗号分隔；`*` 匹配注册名中的任意字符，末尾 `:*` 表示忽略 metadata |
 | `chainMiningSneakGrowEnabled` | `true` | 是否启用蹲下催熟 |
 | `chainMiningSneakGrowWhitelist` | `{}` | 催熟白名单；非空时仅催熟匹配方块，支持通配符 |
 | `chainMiningSneakGrowBlacklist` | `minecraft:grass,minecraft:tallgrass` | 催熟黑名单，优先于白名单，支持通配符 |
@@ -134,10 +134,10 @@ A Minecraft 1.12.2 Forge mod that lets you mine entire veins of matching blocks 
   - **NBT Only** — match by block type + whitelisted NBT data
   - **NBT + Meta** — match by block type + metadata + NBT
   - **Registry Only** — match by block type only
-- **Adjustable range** — Shift + Alt + mouse wheel while holding the key (1-5)
+- **Adjustable range** — the server sets the maximum; use Shift + Alt + mouse wheel while holding the key to choose from `1` through that limit
 - **Aggregated drops** — all drops and XP spawn at the origin block to reduce entity lag
 - **Tool & block blacklists** — wildcard support for fine-grained control
-- **Equivalent block groups** — server-side groups can treat different registry IDs as one block type; wildcards are supported.
+- **Equivalent block groups** — each server-side array entry defines one comma-separated group. Blocks in one group share a matching identity; `*` matches characters in registry IDs, and a trailing `:*` ignores metadata.
 - **Sneak growth** — start sneaking to trigger one growth pass in the configured radius
 - **Unloaded-chunk protection** — preview, scanning, and execution skip unloaded chunks instead of force-loading them
 - **HUD overlay** — shows current mode, shape, range, and preview stats
@@ -165,25 +165,25 @@ All settings are in `config/chainmining.cfg` and can be changed in-game via Mod 
 |---|---|---|
 | `chainMiningShape` | `shapeless` | Chain shape: `shapeless`, `plane`, `tunnel` |
 | `chainMiningMatchMode` | `meta` | Match mode: `meta`, `nbt`, `registry`, `nbt_meta` |
-| `chainMiningHudPosition` | `top_left` | HUD overlay position: `top_left`, `top_right` |
+| `chainMiningHudPosition` | `top_left` | HUD position: `top_left`, `top_center`, `top_right`, `middle_left`, `middle_right`, `bottom_left`, `bottom_center`, or `bottom_right`; invalid values fall back to top-left |
 | `chainMiningPreviewColor` | `FFE65CEB` | Wireframe color (hex ARGB) or `rainbow` |
-| `chainMiningPreviewRenderLimit` | `128` | Max blocks rendered in preview (1-1024) |
-| `chainMiningNeighborRange` | `1` | Neighbor search range (1-5) |
+| `chainMiningPreviewRenderLimit` | `128` | Max blocks rendered in preview (1-8192) |
 | `chainMiningEnablePreview` | `true` | Toggle wireframe preview |
 
 #### Server Settings
 
 | Setting | Default | Description |
 |---|---|---|
-| `chainMiningMaxBlocks` | `128` | Max blocks per chain operation (1-1024) |
+| `chainMiningMaxBlocks` | `128` | Max blocks per chain operation (1-8192) |
+| `chainMiningNeighborRange` | `5` | Maximum neighbor search range (1-16); clients can choose from `1` through this value |
 | `chainMiningExhaustionPerBlock` | `0.1` | Hunger per block (0.0-20.0) |
-| `chainMiningMinFoodLevel` | `0.1` | Min food level to activate (0.0-20.0) |
+| `chainMiningMinFoodLevel` | `1` | Minimum integer food level checked before each block; chain mining stops below this value (0-20) |
 | `chainMiningIgnoreHeldItem` | `false` | Ignore held item requirement |
-| `chainMiningRefreshInterval` | `1` | Server preview refresh in ticks (0=off) |
+| `chainMiningRefreshInterval` | `1` | Server preview refresh in ticks (0=off, 1=every tick) |
 | `chainMiningToolBlackList` | `{}` | Blacklisted tools (wildcards supported) |
 | `chainMiningBlockBlackList` | `{}` | Blacklisted blocks (wildcards supported) |
 | `chainMiningNbtMatchKeys` | `[id, tier, type]` | NBT keys to compare for NBT matching |
-| `chainMiningEquivalentBlockGroups` | `minecraft:tallgrass:*,minecraft:yellow_flower:*,minecraft:red_flower:*,minecraft:double_plant:*` | Server-side equivalent groups; comma-separated entries and wildcard support |
+| `chainMiningEquivalentBlockGroups` | `minecraft:tallgrass:*,minecraft:yellow_flower:*,minecraft:red_flower:*,minecraft:double_plant:*` | Equivalent block groups; each array entry is one comma-separated group. `*` matches registry-ID characters; a trailing `:*` ignores metadata |
 | `chainMiningSneakGrowEnabled` | `true` | Enable sneak-triggered growth |
 | `chainMiningSneakGrowWhitelist` | `{}` | Growth whitelist; when non-empty only matching blocks grow, wildcards supported |
 | `chainMiningSneakGrowBlacklist` | `minecraft:grass,minecraft:tallgrass` | Growth blacklist; takes priority over the whitelist, wildcards supported |

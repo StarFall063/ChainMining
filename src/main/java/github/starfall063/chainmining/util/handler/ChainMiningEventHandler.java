@@ -1,7 +1,10 @@
 package github.starfall063.chainmining.util.handler;
 
+import baubles.api.BaublesApi;
 import github.starfall063.chainmining.ChainMiningConfig;
 import github.starfall063.chainmining.Tags;
+import github.starfall063.chainmining.integration.ae2.AeSecurityStorage;
+import github.starfall063.chainmining.item.ItemChainStorageTerminal;
 import github.starfall063.chainmining.util.*;
 import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
@@ -15,7 +18,9 @@ import net.minecraft.world.World;
 import net.minecraftforge.event.entity.EntityJoinWorldEvent;
 import net.minecraftforge.event.world.BlockEvent;
 import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.common.Loader;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import net.minecraftforge.items.IItemHandler;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -43,7 +48,7 @@ public class ChainMiningEventHandler {
             if (ChainMiningHooks.isToolBlacklisted(tool)) return;
             if (ChainMiningHooks.isBlockBlacklisted(playerMP.world, pos, state)) return;
             if (!ChainMiningHooks.canChainMineBlock(playerMP.world, pos, state, playerMP, tool)) return;
-            if (playerMP.getFoodStats().getFoodLevel() < ChainMiningConfig.SERVER.chainMiningMinFoodLevel) return;
+            if (playerMP.getFoodStats().getFoodLevel() < ChainMiningConfig.effectiveMinFoodLevel()) return;
             if (!ChainMiningHooks.hasChainMiningAbility(tool)) return;
         }
 
@@ -52,7 +57,7 @@ public class ChainMiningEventHandler {
         BlockIdentity sourceId = BlockIdentity.from(playerMP.world, pos, state, mode);
         if (sourceId == null) return;
 
-        List<BlockPos> blocks = ChainMiningHooks.scanBlocks(playerMP.world, pos, state, sourceId, mode, ChainMiningConfig.SERVER.chainMiningMaxBlocks, playerState.neighborRange, playerMP, shapeMode, playerState.hitFace);
+        List<BlockPos> blocks = ChainMiningHooks.scanBlocks(playerMP.world, pos, state, sourceId, mode, ChainMiningConfig.effectiveMaxBlocks(), Math.min(playerState.neighborRange, ChainMiningConfig.effectiveNeighborRange()), playerMP, shapeMode, playerState.hitFace);
 
         if (blocks.size() <= 1) return;
 
@@ -65,7 +70,7 @@ public class ChainMiningEventHandler {
         } finally {
             SESSIONS.remove(uuid);
             ACTIVE.remove(uuid);
-            flushSession(playerMP.world, s);
+            flushSession(playerMP, s);
             playerState.dirty = true;
         }
     }
@@ -90,13 +95,16 @@ public class ChainMiningEventHandler {
         }
     }
 
-    private static void flushSession(World world, Session session) {
+    private static void flushSession(EntityPlayerMP player, Session session) {
+        World world = player.world;
         Map<ChainMiningHooks.ItemKey, Integer> merged = new LinkedHashMap<>();
         for (ItemStack stack : session.drops) {
             if (stack.isEmpty()) continue;
             merged.merge(new ChainMiningHooks.ItemKey(stack), stack.getCount(), Integer::sum);
         }
 
+        ItemStack storageCore = findEnabledStorageCore(player);
+        String securityKey = storageCore.isEmpty() ? "" : ItemChainStorageTerminal.getSecurityKey(storageCore);
         for (Map.Entry<ChainMiningHooks.ItemKey, Integer> e : merged.entrySet()) {
             int total = e.getValue();
             ItemStack base = e.getKey().toStack();
@@ -104,14 +112,62 @@ public class ChainMiningEventHandler {
                 int size = Math.min(total, base.getMaxStackSize());
                 ItemStack out = base.copy();
                 out.setCount(size);
-                Block.spawnAsEntity(world, session.origin, out);
+                ItemStack remainder = storageCore.isEmpty() || !Loader.isModLoaded("appliedenergistics2") ? out : AeSecurityStorage.insert(player, out, securityKey);
+                if (!remainder.isEmpty()) Block.spawnAsEntity(world, session.origin, remainder);
                 total -= size;
             }
         }
 
         if (session.xp > 0) {
-            world.spawnEntity(new EntityXPOrb(world, session.origin.getX()+0.5, session.origin.getY()+0.5, session.origin.getZ()+0.5, session.xp));
+            world.spawnEntity(new EntityXPOrb(world, session.origin.getX() + 0.5, session.origin.getY() + 0.5, session.origin.getZ() + 0.5, session.xp));
         }
+    }
+
+    private static ItemStack findEnabledStorageCore(EntityPlayerMP player) {
+        ItemStack selected = ItemStack.EMPTY;
+        int selectedInventorySlot = -1;
+        for (int i = 0; i < player.inventory.mainInventory.size(); i++) {
+            ItemStack stack = player.inventory.mainInventory.get(i);
+            if (stack.getItem() == ItemChainStorageTerminal.INSTANCE && ItemChainStorageTerminal.isEnabled(stack)) {
+                if (selected.isEmpty() && ItemChainStorageTerminal.isBound(stack)) {
+                    selected = stack;
+                    selectedInventorySlot = i;
+                }
+            }
+        }
+        IItemHandler baubles = ItemChainStorageTerminal.isBaublesLoaded()
+                ? BaublesApi.getBaublesHandler(player) : null;
+        int selectedBaubleSlot = -1;
+        if (baubles != null) {
+            for (int i = 0; i < baubles.getSlots(); i++) {
+                ItemStack stack = baubles.getStackInSlot(i);
+                if (stack.getItem() == ItemChainStorageTerminal.INSTANCE && ItemChainStorageTerminal.isEnabled(stack)) {
+                    if (selected.isEmpty() && ItemChainStorageTerminal.isBound(stack)) {
+                        selected = stack;
+                        selectedBaubleSlot = i;
+                    }
+                }
+            }
+        }
+        if (!selected.isEmpty()) {
+            for (int i = 0; i < player.inventory.mainInventory.size(); i++) {
+                ItemStack stack = player.inventory.mainInventory.get(i);
+                if (i != selectedInventorySlot && stack.getItem() == ItemChainStorageTerminal.INSTANCE
+                        && ItemChainStorageTerminal.isEnabled(stack)) {
+                    ItemChainStorageTerminal.setEnabled(stack, false);
+                }
+            }
+            if (baubles != null) {
+                for (int i = 0; i < baubles.getSlots(); i++) {
+                    ItemStack stack = baubles.getStackInSlot(i);
+                    if (i != selectedBaubleSlot && stack.getItem() == ItemChainStorageTerminal.INSTANCE
+                            && ItemChainStorageTerminal.isEnabled(stack)) {
+                        ItemChainStorageTerminal.setHandlerEnabled(baubles, i, false);
+                    }
+                }
+            }
+        }
+        return selected;
     }
 }
 

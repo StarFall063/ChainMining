@@ -19,6 +19,9 @@ public class CommonProxy {
         ChainMiningNetwork.CHANNEL.registerMessage(
                 ChainMiningNetwork.PreviewMessage.Handler.class,
                 ChainMiningNetwork.PreviewMessage.class, 1, Side.CLIENT);
+        ChainMiningNetwork.CHANNEL.registerMessage(
+                ChainMiningNetwork.ToggleStorageCoreMessage.Handler.class,
+                ChainMiningNetwork.ToggleStorageCoreMessage.class, 2, Side.SERVER);
     }
 
     public void postInit(FMLPostInitializationEvent event) {

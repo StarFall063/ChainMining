@@ -22,7 +22,7 @@ public final class ChainMiningServerPreviewTick {
         MinecraftServer server = FMLCommonHandler.instance().getMinecraftServerInstance();
         if (server == null) return;
 
-        int interval = ChainMiningConfig.SERVER.chainMiningPreviewRefreshInterval;
+        int interval = ChainMiningConfig.effectivePreviewRefreshInterval();
         boolean forced = (interval > 0 && ++tickCounter % interval == 0);
 
         for (EntityPlayerMP playerMP : server.getPlayerList().getPlayers()) {
