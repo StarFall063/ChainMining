@@ -31,7 +31,6 @@ public class ChainMiningPreviewHandler {
         if (blocks == null || blocks.isEmpty() || !ChainMiningStateManager.isClientEnabled()) return;
 
         if (!ChainMiningConfig.CLIENT.chainMiningEnablePreview) {
-            // Keep HUD preview statistics from describing a wireframe that is not rendered.
             ChainMiningStateManager.setPreviewRendered(0);
             ChainMiningStateManager.setPreviewHidden(0);
             return;

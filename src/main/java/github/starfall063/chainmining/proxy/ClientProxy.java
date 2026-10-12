@@ -5,6 +5,7 @@ import github.starfall063.chainmining.Tags;
 import github.starfall063.chainmining.compact.TConstructCompact;
 import github.starfall063.chainmining.item.ItemChainStorageTerminal;
 import github.starfall063.chainmining.item.ItemMiningModifier;
+import github.starfall063.chainmining.registry.ModRegistration;
 import net.minecraft.client.renderer.block.model.ModelResourceLocation;
 import net.minecraft.item.Item;
 import net.minecraftforge.client.model.ModelLoader;
@@ -23,10 +24,12 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 public class ClientProxy extends CommonProxy {
     @SubscribeEvent
     public static void registerModels(ModelRegistryEvent event) {
-        if (ItemMiningModifier.shouldRegister()) {
+        if (ModRegistration.isMiningModifierEnabled()) {
             ItemMiningModifier.INSTANCE.registerModels();
         }
-        ItemChainStorageTerminal.INSTANCE.registerModels();
+        if (ModRegistration.isStorageTerminalEnabled()) {
+            ItemChainStorageTerminal.INSTANCE.registerModels();
+        }
     }
 
     @Override

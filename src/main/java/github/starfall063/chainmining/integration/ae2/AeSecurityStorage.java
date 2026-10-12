@@ -52,7 +52,6 @@ public final class AeSecurityStorage {
         return inserter == null ? input : inserter.apply(input);
     }
 
-    /** Used only during one synchronous drop settlement; never retained across ticks. */
     private static final class Inserter implements UnaryOperator<ItemStack> {
         private final IActionHost host;
         private final IGrid grid;

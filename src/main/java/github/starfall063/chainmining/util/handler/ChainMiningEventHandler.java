@@ -60,7 +60,9 @@ public class ChainMiningEventHandler {
 
         List<BlockPos> blocks = ChainMiningHooks.scanBlocks(playerMP.world, pos, state, sourceId, mode, ChainMiningConfig.effectiveMaxBlocks(), Math.min(playerState.neighborRange, ChainMiningConfig.effectiveNeighborRange()), playerMP, shapeMode, playerState.hitFace);
 
-        if (blocks.size() <= 1) return;
+        if (blocks.isEmpty()) return;
+        // A single matched block still needs drop capture when AE storage is enabled.
+        if (blocks.size() == 1 && findEnabledStorageCore(playerMP).isEmpty()) return;
 
         event.setCanceled(true);
         ACTIVE.add(uuid);
@@ -121,6 +123,7 @@ public class ChainMiningEventHandler {
     }
 
     private static ItemStack findEnabledStorageCore(EntityPlayerMP player) {
+        if (!Loader.isModLoaded("appliedenergistics2")) return ItemStack.EMPTY;
         ItemStack selected = ItemStack.EMPTY;
         int selectedInventorySlot = -1;
         for (int i = 0; i < player.inventory.mainInventory.size(); i++) {
